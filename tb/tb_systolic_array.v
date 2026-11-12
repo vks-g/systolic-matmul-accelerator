@@ -9,9 +9,13 @@
 //
 // Two arrays are tested in one run: N = 4 and N = 3.
 //
+//   make sim-systolic_array        (or by hand:)
 //   iverilog -g2005 -Wall -I rtl/include -o build/tb_systolic_array.vvp \
 //       tb/tb_systolic_array.v rtl/array/systolic_array.v rtl/pe/pe.v rtl/pe/mac.v
-//   vvp -n build/tb_systolic_array.vvp [+vcd=build/tb_systolic_array.vcd]
+//   vvp -n build/tb_systolic_array.vvp
+//
+// Waveforms go to build/tb_systolic_array.vcd (docs/setup.md), so
+// `make waves WAVE_MODULE=systolic_array` opens them. +vcd=<file> picks another path.
 //
 // Last line of output: "PASS tb_systolic_array <passed>/<total>", or
 // "FAIL tb_systolic_array ..." followed by $fatal.
@@ -374,10 +378,10 @@ module tb_systolic_array;
 
     reg [8*256-1:0] vcd_file;
     initial begin
-        if ($value$plusargs("vcd=%s", vcd_file)) begin
-            $dumpfile(vcd_file);
-            $dumpvars(0, tb_systolic_array);
-        end
+        if (!$value$plusargs("vcd=%s", vcd_file))
+            vcd_file = "build/tb_systolic_array.vcd";
+        $dumpfile(vcd_file);
+        $dumpvars(0, tb_systolic_array);
     end
 
     initial begin
