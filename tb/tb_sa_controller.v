@@ -135,7 +135,7 @@ module tb_sa_controller;
         @(negedge clk);
         rst_n = 1'b1;
 
-        $display("PASS tb_sa_controller: N=4 (T=10) and N=3 (T=7), %0d checks", checks);
+        $display("PASS tb_sa_controller %0d/%0d", checks, checks);
         $finish;
     end
 
