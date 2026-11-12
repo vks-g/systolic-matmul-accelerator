@@ -100,7 +100,7 @@ module tb_pe;
         step(1'b0, 1'b1, 6, 6, 6, 6, 36);
         step(1'b1, 1'b1, 3, 3, 0, 0, 0);     // clear wins over en
 
-        $display("PASS tb_pe: %0d checks", checks);
+        $display("PASS tb_pe %0d/%0d", checks, checks);
         $finish;
     end
 

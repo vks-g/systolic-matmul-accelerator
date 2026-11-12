@@ -97,7 +97,7 @@ module tb_mac;
         step(1'b1, 1'b1,  10,  10,      0);   // clear with en high -> 0
         step(1'b0, 1'b1,   7,  -2,    -14);   // 7*-2 after the clear -> -14
 
-        $display("PASS tb_mac: %0d checks", checks);
+        $display("PASS tb_mac %0d/%0d", checks, checks);
         $finish;
     end
 
