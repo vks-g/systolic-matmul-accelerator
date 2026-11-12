@@ -6,6 +6,7 @@
 // b_top), already skewed by input_skew_buffer. Each PE passes its A operand one
 // PE to the right and its B operand one PE down every enabled cycle.
 
+`timescale 1ns / 1ps
 `default_nettype none
 `include "sa_params.vh"
 
