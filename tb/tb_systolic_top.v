@@ -92,6 +92,60 @@ module tb_systolic_top;
         end
     endtask
 
+    // Write case c's A and B through the two write ports, one element per cycle each.
+    task load_case(input integer c);
+        integer addr;
+        begin
+            for (addr = 0; addr < NN; addr = addr + 1) begin
+                a_we = 1'b1; a_addr = addr; a_wdata = a_mem[c*NN + addr];
+                b_we = 1'b1; b_addr = addr; b_wdata = b_mem[c*NN + addr];
+                tick;
+            end
+            a_we = 1'b0;
+            b_we = 1'b0;
+        end
+    endtask
+
+    // Pulse start for one cycle and wait for done, counting the cycles busy is high.
+    integer busy_cycles;
+    task run_once;
+        integer guard;
+        begin
+            start = 1'b1;
+            tick;                           // start sampled at this edge
+            start = 1'b0;
+            busy_cycles = 0;
+            guard = 0;
+            while (done !== 1'b1 && guard < 10*BUSY) begin
+                if (busy === 1'b1)
+                    busy_cycles = busy_cycles + 1;
+                tick;
+                guard = guard + 1;
+            end
+            check(done === 1'b1, "done never rose", guard, BUSY);
+            check(busy_cycles == BUSY, "busy cycles", busy_cycles, BUSY);
+            check(cycle_count == BUSY, "cycle_count", cycle_count, BUSY);
+        end
+    endtask
+
+    // Read every address of C and compare it with case c of c.hex.
+    task check_c(input integer c);
+        integer addr;
+        begin
+            for (addr = 0; addr < NN; addr = addr + 1) begin
+                c_addr = addr;
+                #0.1;
+                n_checks = n_checks + 1;
+                if (c_rdata !== $signed(c_mem[c*NN + addr])) begin
+                    if (n_fail < MAX_REPORTED)
+                        $display("  FAIL case %0d: C[%0d][%0d] = %0d, expected %0d",
+                                 c, addr / N, addr % N, c_rdata, $signed(c_mem[c*NN + addr]));
+                    n_fail = n_fail + 1;
+                end
+            end
+        end
+    endtask
+
     // Print the seed line of manifest.txt, so the log records the vector seed.
     task print_vector_seed;
         integer fd, seed_val, r;
@@ -112,6 +166,8 @@ module tb_systolic_top;
     endtask
 
     // ---- the test sequence -------------------------------------------------
+
+    integer vc;
 
     initial begin
         $dumpfile("build/tb_systolic_top.vcd");
@@ -139,6 +195,14 @@ module tb_systolic_top;
         check_c_zero("reset C");
         rst_n = 1'b1;
         tick;
+
+        // Every case in the vectors: directed cases 0-5, then the random ones.
+        for (vc = 0; vc < n_cases; vc = vc + 1) begin
+            load_case(vc);
+            run_once;
+            check_c(vc);
+        end
+        $display("cases: %0d run, every element of C compared", n_cases);
 
         if (n_fail == 0) begin
             $display("PASS tb_systolic_top %0d/%0d", n_checks, n_checks);
