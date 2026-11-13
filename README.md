@@ -27,6 +27,14 @@ This project builds a parameterized N×N array (default 4×4) with an **output-s
 
 For an N×N by N×N product, the array finishes in `3N − 2` compute cycles (10 for 4×4), against N³ = 64 cycles for a single sequential MAC.
 
+## Architecture diagrams
+
+![System architecture: host write ports, A/B storage and skew, the N×N PE array, output buffer and controller.](docs/architecture/svg/system.svg)
+
+[All four diagrams, editable sources and SVG/PNG exports](docs/architecture/README.md)
+cover the system, PE internals, 4×4 wavefront and controller states, following
+[the architecture contract](docs/spec.md).
+
 ## Status
 
 | Component | Path | Issue | Status |
