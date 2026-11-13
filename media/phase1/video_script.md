@@ -17,6 +17,25 @@ Record your segment as a screen capture with your voice, keep to your slot, and 
 | 4:05–4:45 | 0:40 | Gokul (@vks-g) | Results, latency, Phase 2 roadmap |
 | 4:45–4:55 | 0:10 | End card | Repository link |
 
+## Title and end cards
+
+**Title card (0:00–0:10):**
+
+> A Parameterized Output-Stationary Systolic Array for Fixed-Point Matrix Multiplication: Phase 1 Prototype
+>
+> Gokul VKS · Milind Bansal · Isha Tomar · Yashi Agrawal · Mohammad Affan Anas
+>
+> Newton School of Technology, Rishihood University
+
+**End card (4:45–4:55):** `github.com/vks-g/systolic-matmul-accelerator`
+
+## Sending your recording
+
+- 1920×1080 screen capture, MP4, your own voice, no background music.
+- Trim to your slot. Over-long segments get cut at the slot boundary.
+- Name the file `segment_<github-handle>.mp4` and send it to Isha by Sun 15 Nov, 22:00.
+- Show real output: run `make test` on current `dev` rather than pasting old logs.
+
 ## Storyboard
 
 Each segment lists what is on screen and the points to say. Put them in your own words; the numbers must stay as written, since they come from `docs/spec.md` and the logs in `results/phase1/`.
