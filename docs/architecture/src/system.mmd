@@ -1,0 +1,32 @@
+flowchart LR
+  accTitle: System architecture — output-stationary matrix multiplication
+  accDescr: Host write ports load two input_skew_buffer instances while not busy. Each buffer combines matrix storage with combinational lane skew. A moves right and B down through the array. The controller clears, computes, and captures all accumulators into the output buffer, which serves the host read port.
+
+  subgraph top["systolic_top — specified integration (issue #4)"]
+    gate["Host A/B write ports<br/>a_we, a_addr, a_wdata<br/>b_we, b_addr, b_wdata<br/>we_A = a_we AND !busy<br/>we_B = b_we AND !busy"]
+    subgraph abuf["input_skew_buffer (A), COLUMN_LANES = 0"]
+      amem["A storage<br/>N × N signed DATA_W<br/>row-major writes"]
+      askew["Combinational row skew<br/>en and 0 ≤ step − i < K:<br/>lane i = A[i][step − i]<br/>else zero"]
+      amem --> askew
+    end
+    subgraph bbuf["input_skew_buffer (B), COLUMN_LANES = 1"]
+      bmem["B storage<br/>N × N signed DATA_W<br/>row-major writes"]
+      bskew["Combinational column skew<br/>en and 0 ≤ step − j < K:<br/>lane j = B[step − j][j]<br/>else zero"]
+      bmem --> bskew
+    end
+    arr["systolic_array<br/>N × N pe<br/>A → right; B → down<br/>C[i][j] stays in each PE"]
+    obuf["output_buffer<br/>N × N ACC_W<br/>capture / hold C<br/>Host read port: c_addr in<br/>signed c_rdata out (ACC_W)<br/>combinational read"]
+    ctrl["sa_controller<br/>Host: start in<br/>busy, done, cycle_count out<br/>CLEAR → COMPUTE → CAPTURE"]
+    gate --> amem
+    gate --> bmem
+    askew -->|"a_left: N × DATA_W"| arr
+    bskew -->|"b_top: N × DATA_W"| arr
+    arr -->|"acc_flat: N × N × ACC_W"| obuf
+    ctrl -. "en, step" .-> askew
+    ctrl -. "en, step" .-> bskew
+    ctrl -. "clear, en" .-> arr
+    ctrl -. "capture" .-> obuf
+    ctrl -. "busy" .-> gate
+  end
+  classDef control fill:#fff3d6,stroke:#8b6016,color:#13263d
+  class ctrl control
