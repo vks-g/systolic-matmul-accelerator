@@ -107,8 +107,10 @@ module tb_systolic_top;
     endtask
 
     // Pulse start for one cycle and wait for done, counting the cycles busy is high.
+    // With write_during_run set, the testbench also writes other values to A and B
+    // in every busy cycle; the top must ignore them (spec 7.5).
     integer busy_cycles;
-    task run_once;
+    task run_once(input integer write_during_run);
         integer guard;
         begin
             start = 1'b1;
@@ -117,11 +119,18 @@ module tb_systolic_top;
             busy_cycles = 0;
             guard = 0;
             while (done !== 1'b1 && guard < 10*BUSY) begin
-                if (busy === 1'b1)
+                if (busy === 1'b1) begin
                     busy_cycles = busy_cycles + 1;
+                    if (write_during_run) begin
+                        a_we = 1'b1; a_addr = guard % NN;       a_wdata = 127 - guard;
+                        b_we = 1'b1; b_addr = (guard + 5) % NN; b_wdata = guard - 100;
+                    end
+                end
                 tick;
                 guard = guard + 1;
             end
+            a_we = 1'b0;
+            b_we = 1'b0;
             check(done === 1'b1, "done never rose", guard, BUSY);
             check(busy_cycles == BUSY, "busy cycles", busy_cycles, BUSY);
             check(cycle_count == BUSY, "cycle_count", cycle_count, BUSY);
@@ -142,6 +151,28 @@ module tb_systolic_top;
                                  c, addr / N, addr % N, c_rdata, $signed(c_mem[c*NN + addr]));
                     n_fail = n_fail + 1;
                 end
+            end
+        end
+    endtask
+
+    // Expected C for the handshake checks, set from a case or worked by hand.
+    reg signed [ACC_W-1:0] exp_c [0:NN-1];
+
+    task expect_case(input integer c);
+        integer addr;
+        begin
+            for (addr = 0; addr < NN; addr = addr + 1)
+                exp_c[addr] = $signed(c_mem[c*NN + addr]);
+        end
+    endtask
+
+    task check_c_exp(input [8*24-1:0] what);
+        integer addr;
+        begin
+            for (addr = 0; addr < NN; addr = addr + 1) begin
+                c_addr = addr;
+                #0.1;
+                check(c_rdata === exp_c[addr], what, c_rdata, exp_c[addr]);
             end
         end
     endtask
@@ -217,7 +248,7 @@ module tb_systolic_top;
         $fdisplay(csv, "case,name,busy_cycles,cycle_count,expected_busy,compute_cycles,expected_compute");
         for (vc = 0; vc < n_cases; vc = vc + 1) begin
             load_case(vc);
-            run_once;
+            run_once(0);
             check_c(vc);
             $fdisplay(csv, "%0d,%0s,%0d,%0d,%0d,%0d,%0d", vc, case_name[vc], busy_cycles,
                       cycle_count, BUSY, busy_cycles - 2, K + 2*N - 2);
@@ -225,6 +256,22 @@ module tb_systolic_top;
         $fclose(csv);
         $display("cases: %0d run, every element of C compared; cycle counts in results/phase1/cycle_counts.csv",
                  n_cases);
+
+        // Writes during a run are ignored (spec 7.5, section 10): load the known
+        // case, write other values to A and B in every busy cycle, and C must
+        // still be the known product.
+        load_case(5);
+        expect_case(5);
+        run_once(1);
+        check_c_exp("C after writes in run");
+
+        // Back-to-back runs: start again from DONE without reloading. A and B keep
+        // their contents and the writes above were not taken, so C is the same.
+        run_once(0);
+        check_c_exp("C back-to-back run");
+        run_once(0);
+        check_c_exp("C third run");
+        $display("handshake: writes during a run ignored, back-to-back runs checked");
 
         if (n_fail == 0) begin
             $display("PASS tb_systolic_top %0d/%0d", n_checks, n_checks);
