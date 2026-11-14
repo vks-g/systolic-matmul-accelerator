@@ -75,7 +75,9 @@ module sa_controller (
 
                 S_COMPUTE: begin
                     cycle_count <= cycle_count + 1'b1;
-                    if (step == T - 1) begin
+                    // Zero-extend step to 32 bits so the compare with the
+                    // 32-bit constant is width-clean for every N.
+                    if ({{(32-STEP_W){1'b0}}, step} == T - 1) begin
                         state <= S_CAPTURE;
                         step  <= {STEP_W{1'b0}};
                     end else begin
