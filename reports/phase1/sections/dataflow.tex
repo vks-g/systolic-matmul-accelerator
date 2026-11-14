@@ -1,4 +1,18 @@
 % Proposed solution: output-stationary dataflow and input skewing (issue #13).
 
 \subsection{Dataflow and Input Skewing}
-To be written in \#13.
+The array is output-stationary: PE $(i,j)$ keeps $C[i][j]$ in its accumulator for the whole run, and only the operands move. Row $i$ of $A$ enters the left edge at PE $(i,0)$ and moves one PE to the right per cycle. Column $j$ of $B$ enters the top edge at PE $(0,j)$ and moves one PE down per cycle. Results never move during the computation, so the output buffer can copy all $N^2$ of them in one cycle when it ends.
+
+The two operands of a product must reach a PE in the same cycle. Number the compute cycles $t = 0, 1, \ldots, T-1$. In step $t$ the skew buffers put $A[i][t-i]$ on lane $i$ of the left edge and $B[t-j][j]$ on lane $j$ of the top edge, and zero when the index falls outside $0 \le k < K$. Each PE adds one cycle of delay in each direction, so in step $t$ PE $(i,j)$ receives
+\begin{equation}
+a = A[i][t-i-j], \qquad b = B[t-i-j][j].
+\end{equation}
+Both carry the same index $k = t - i - j$. PE $(i,j)$ therefore adds the term $A[i][k]\,B[k][j]$ of~\eqref{eq:matmul} in step $t = i + j + k$, and it receives zeros, which add nothing, in every other step.
+
+The compute length follows from the last term. PE $(i,j)$ is busy from step $i+j$ to step $i+j+K-1$, so the last PE, $(N{-}1,N{-}1)$, adds its last term in step $K + 2N - 3$, and
+\begin{equation}
+T = K + 2N - 2,
+\end{equation}
+which is 10 for $N = K = 4$. The PEs that are busy in one step lie on anti-diagonals: in step 3, PE $(0,0)$ adds its term $k = 3$ while PE $(3,0)$ adds its term $k = 0$. The edges go quiet after step $K + N - 2 = 6$, but the last operands are still crossing the array until step 9.
+
+Each input skew buffer stores one $N \times N$ matrix, written row-major by the host before \texttt{start}. During compute it selects its lanes combinationally from the controller's \texttt{step}: lane $l$ carries $M[l][t-l]$ for $A$, whose lanes are rows, and $M[t-l][l]$ for $B$, whose lanes are columns. One module serves both edges through a parameter. The buffer compares $t \ge l$ before it subtracts, so the index never wraps around. Selecting from stored operands rather than shifting them through delay registers means the host may write the matrices in any order, and both matrices stay in place for the next run.
