@@ -5,4 +5,11 @@ Each processing element (PE) owns one output element $C[i][j]$. It holds a multi
 
 The PE also registers its operands. The left operand $a$ is copied to the right neighbour and the top operand $b$ to the neighbour below, one enabled cycle later. Each operand therefore moves one PE per cycle, which is what lets the skewed inputs meet at PE $(i,j)$ in the cycle that the term $A[i][k]B[k][j]$ needs.
 
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{pe.png}
+\caption{One PE in simulation (\texttt{tb\_pe}, GTKWave). Each operand leaves on \texttt{a\_out} and \texttt{b\_out} one enabled cycle after it arrives (A) and holds while \texttt{en} is low (B). The accumulator sums $1\cdot5 + 2\cdot6 + 3\cdot7 + 4\cdot8 = 70$ over $K = 4$ steps (C), and $-128 \times -128$ gives 16{,}384 (D).}
+\label{fig:pe-wave}
+\end{figure*}
+
 The accumulator width follows from the largest possible sum. For $K = N = 4$ the largest magnitude is $K \cdot 2^{2\cdot\mathrm{DATA\_W}-2} = 4 \cdot 2^{14} = 65{,}536$, reached when every operand is $-128$. That needs 18 bits, so a 32-bit accumulator cannot overflow for any $K$ below 131{,}072. The datapath therefore does not saturate. Rounding and saturating back to 8 bits are left for Phase 2.
