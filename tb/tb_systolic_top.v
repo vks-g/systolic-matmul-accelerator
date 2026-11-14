@@ -83,6 +83,9 @@ module tb_systolic_top;
         end
     endtask
 
+    // C is read one element per cycle, as a host does (spec section 8), so the
+    // reads show up one address per cycle in the waveform.
+
     // Every address of C reads zero (after reset).
     task check_c_zero(input [8*24-1:0] what);
         integer addr;
@@ -91,6 +94,7 @@ module tb_systolic_top;
                 c_addr = addr;
                 #0.1;
                 check(c_rdata === 0, what, c_rdata, 0);
+                tick;
             end
         end
     endtask
@@ -174,6 +178,7 @@ module tb_systolic_top;
                                  c, addr / N, addr % N, c_rdata, $signed(c_mem[c*NN + addr]));
                     n_fail = n_fail + 1;
                 end
+                tick;
             end
         end
     endtask
@@ -201,6 +206,7 @@ module tb_systolic_top;
                 c_addr = addr;
                 #0.1;
                 check(c_rdata === exp_c[addr], what, c_rdata, exp_c[addr]);
+                tick;
             end
         end
     endtask

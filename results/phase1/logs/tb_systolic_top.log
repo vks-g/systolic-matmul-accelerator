@@ -5,4 +5,4 @@ cases: 106 run, every element of C compared; cycle counts in results/phase1/cycl
 handshake: writes during a run ignored, back-to-back runs checked
 handshake: C readable until CAPTURE, one matrix replaced, reset mid-run checked
 PASS tb_systolic_top 2195/2195
-tb/tb_systolic_top.v:341: $finish called at 32397600 (1ps)
+tb/tb_systolic_top.v:347: $finish called at 50796000 (1ps)
