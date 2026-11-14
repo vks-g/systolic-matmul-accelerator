@@ -18,17 +18,29 @@ for the repository README, Phase 1 report and prototype video. The contract is
 
 ![System diagram showing host ports, write gating, A and B storage and skew, the PE array, output capture and controller connections.](svg/system.svg)
 
-Solid arrows carry data; dashed arrows carry controller signals. Host write,
-command/status and read ports are listed at their respective blocks. All
-registers share
-`clk` and synchronous active-low `rst_n`; reset/clock fanout is omitted for
-clarity.
+The landscape figure follows the implemented
+[`rtl/top/systolic_top.v`](../../rtl/top/systolic_top.v). Solid arrows bundle
+related data buses; the dashed link groups controller fanout. The controller
+box lists each signal's destination. `a_left` and `b_top` are separate
+`N*DATA_W` buses, and `acc_flat` carries `N*N*ACC_W` accumulator bits.
+Host write labels use common suffixes: A has `a_we`, `a_addr`, `a_wdata`;
+B has `b_we`, `b_addr`, `b_wdata`. `c_rdata` is a signed `ACC_W`-bit result.
 
-The storage and skew boxes are functional parts of each **single**
-`input_skew_buffer` instance. Skew is combinational selection by `step`,
-not another registered pipeline stage. The top-level integration shown is
-specified by §6.7 and owned by issue #4; it is not evidence that
-`rtl/top/systolic_top.v` has landed. Write gating belongs in that top level.
+The combined input-buffer box represents **two** `input_skew_buffer`
+instances. Each contains matrix storage and combinational skew selection by
+`step`: row skew for A (`COLUMN_LANES = 0`), column skew for B
+(`COLUMN_LANES = 1`). The lane formulas and zero padding are in spec §6.4.
+The top level gates both write enables with `!busy`. All registers share
+`clk` and synchronous active-low `rst_n`; individual clock/reset wires are
+omitted for clarity.
+
+The system export is designed for a two-column report figure at **7.16 in
+wide**, rather than a single column. At that width its 18-unit SVG labels
+print at approximately **7.5 pt**. The Mermaid source keeps the controller
+above the left-to-right datapath, shortens box text, and positions the
+`a_left`/`b_top` and `acc_flat` labels above their arrows. Check the PNG
+width, aspect ratio and print-size label readability after layout edits;
+issue #39 targets a landscape PNG no wider than about 2600 px.
 
 ### PE internals
 
@@ -112,6 +124,18 @@ LaTeX. The report already searches `docs/architecture/png/` via
 \includegraphics[width=\columnwidth]{pe.png}
 ```
 
-For larger figures, use a two-column `figure*` and constrain both dimensions
-with `width=\textwidth,height=0.8\textheight,keepaspectratio`. Report section
-text, figure numbering and the built PDF remain with their respective owners.
+Use a two-column `figure*` for the system diagram so its labels retain their
+intended print size (7.16 in wide with this report's template):
+
+```tex
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{system.png}
+\caption{System architecture of the output-stationary accelerator.}
+\label{fig:system}
+\end{figure*}
+```
+
+Report section text, figure numbering and the built PDF remain with their
+respective owners. The report owner will switch the existing figure to
+`figure*` after the landscape asset lands (issue #39).
