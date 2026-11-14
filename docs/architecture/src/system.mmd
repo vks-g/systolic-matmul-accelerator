@@ -1,32 +1,37 @@
-flowchart LR
+---
+config:
+  themeCSS: ".edgeLabel .label { transform: translateY(-30px); }"
+  flowchart:
+    nodeSpacing: 24
+    rankSpacing: 20
+    padding: 10
+    wrappingWidth: 600
+    subGraphTitleMargin:
+      top: 10
+      bottom: 16
+---
+flowchart TB
   accTitle: System architecture — output-stationary matrix multiplication
-  accDescr: Host write ports load two input_skew_buffer instances while not busy. Each buffer combines matrix storage with combinational lane skew. A moves right and B down through the array. The controller clears, computes, and captures all accumulators into the output buffer, which serves the host read port.
+  accDescr: The systolic_top host write ports load two input_skew_buffer instances only while busy is low. A storage and row skew and B storage and column skew feed the N by N systolic_array. Each PE retains its result. The output_buffer captures all accumulators and serves the host read port. Above the datapath, sa_controller accepts start, returns busy, done and cycle_count, and drives the listed control signals.
 
-  subgraph top["systolic_top — specified integration (issue #4)"]
-    gate["Host A/B write ports<br/>a_we, a_addr, a_wdata<br/>b_we, b_addr, b_wdata<br/>we_A = a_we AND !busy<br/>we_B = b_we AND !busy"]
-    subgraph abuf["input_skew_buffer (A), COLUMN_LANES = 0"]
-      amem["A storage<br/>N × N signed DATA_W<br/>row-major writes"]
-      askew["Combinational row skew<br/>en and 0 ≤ step − i < K:<br/>lane i = A[i][step − i]<br/>else zero"]
-      amem --> askew
+  subgraph top["systolic_top"]
+    direction TB
+    ctrl["sa_controller<br/>Host: start in; busy, done, cycle_count out<br/>busy → write gating; en, step → skew buffers<br/>clear, en → array; capture → output buffer"]
+    subgraph datapath["Datapath"]
+      direction LR
+      wr["A/B write ports<br/>we / addr / wdata<br/>when !busy"]
+      buffers["input_skew_buffer ×2<br/>N × N storage each<br/>A: row skew<br/>B: column skew"]
+      arr["systolic_array<br/>N × N PEs<br/>C stays local"]
+      obuf["output_buffer<br/>capture / hold C<br/>c_addr → c_rdata"]
+      wr --> buffers
+      buffers -->|"a_left, b_top"| arr
+      arr -->|"acc_flat"| obuf
     end
-    subgraph bbuf["input_skew_buffer (B), COLUMN_LANES = 1"]
-      bmem["B storage<br/>N × N signed DATA_W<br/>row-major writes"]
-      bskew["Combinational column skew<br/>en and 0 ≤ step − j < K:<br/>lane j = B[step − j][j]<br/>else zero"]
-      bmem --> bskew
-    end
-    arr["systolic_array<br/>N × N pe<br/>A → right; B → down<br/>C[i][j] stays in each PE"]
-    obuf["output_buffer<br/>N × N ACC_W<br/>capture / hold C<br/>Host read port: c_addr in<br/>signed c_rdata out (ACC_W)<br/>combinational read"]
-    ctrl["sa_controller<br/>Host: start in<br/>busy, done, cycle_count out<br/>CLEAR → COMPUTE → CAPTURE"]
-    gate --> amem
-    gate --> bmem
-    askew -->|"a_left: N × DATA_W"| arr
-    bskew -->|"b_top: N × DATA_W"| arr
-    arr -->|"acc_flat: N × N × ACC_W"| obuf
-    ctrl -. "en, step" .-> askew
-    ctrl -. "en, step" .-> bskew
-    ctrl -. "clear, en" .-> arr
-    ctrl -. "capture" .-> obuf
-    ctrl -. "busy" .-> gate
+    ctrl -.-> datapath
+    shared["Shared clk; synchronous active-low rst_n<br/>Defaults: N = 4, DATA_W = 8, ACC_W = 32"]
+    datapath ~~~ shared
   end
   classDef control fill:#fff3d6,stroke:#8b6016,color:#13263d
+  classDef note fill:#f3f5f8,stroke:#60758b,color:#13263d
   class ctrl control
+  class shared note
