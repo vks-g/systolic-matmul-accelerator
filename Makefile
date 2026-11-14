@@ -4,7 +4,8 @@ PYTHON ?= python3
 IVERILOG ?= iverilog
 VVP ?= vvp
 VERILATOR ?= verilator
-VIEWER ?= gtkwave
+# Prefer GTKWave when installed; the macOS setup also supports Surfer.
+VIEWER ?= $(if $(shell command -v gtkwave 2>/dev/null),gtkwave,surfer)
 N ?= 4
 RANDOM_CASES ?= 100
 SEED ?= 1
@@ -26,7 +27,7 @@ help:
 	@echo 'make vectors        Generate fixed-seed golden vectors (when available)'
 	@echo 'make sim-<module>   Compile and run tb/tb_<module>.v'
 	@echo 'make test           Generate vectors and run all available testbenches'
-	@echo 'make waves          Run systolic_top and open its VCD (VIEWER=surfer also works)'
+	@echo 'make waves          Run systolic_top and open its VCD (GTKWave or Surfer)'
 	@echo 'make clean          Remove build outputs and the generated vector link'
 
 # Lint each module as a top to avoid MULTITOP warnings while retaining -Wall.
@@ -99,6 +100,9 @@ waves: sim-$(WAVE_MODULE)
 		echo 'SKIP waves: golden vector generator has not landed (#14)'; \
 	elif test ! -f "$(WAVE_FILE)"; then \
 		echo 'ERROR: no $(WAVE_FILE); the testbench must dump a VCD there (or set WAVE_FILE)'; \
+		exit 1; \
+	elif ! (set -- $(VIEWER); test "$$#" -gt 0 && command -v "$$1" >/dev/null 2>&1); then \
+		echo 'ERROR: waveform viewer not found; install GTKWave or Surfer (docs/setup.md), or set VIEWER=/path/to/viewer'; \
 		exit 1; \
 	else $(VIEWER) "$(WAVE_FILE)"; fi
 

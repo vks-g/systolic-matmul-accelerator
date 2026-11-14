@@ -19,6 +19,8 @@ available as `gmake`. For waveforms, download the macOS ARM binary from
 executable on your `PATH`. On other Macs, follow its source-build instructions
 or use a compatible [GTKWave release](https://gtkwave.sourceforge.net/).
 Check that `surfer --help` or `gtkwave --help` works before `make waves`.
+Make selects GTKWave when it is on `PATH`, otherwise Surfer. An explicit
+`VIEWER=...` overrides this selection.
 
 ## Linux (Ubuntu / Debian)
 
@@ -122,7 +124,7 @@ the compile/run commands below are the functional check.
 make lint test
 make vectors                         # N=4, RANDOM_CASES=100, SEED=1
 make sim-pe                          # tb/tb_pe.v, once the PE lands
-make waves                           # tb_systolic_top and GTKWave
+make waves                           # tb_systolic_top and an installed viewer
 make waves VIEWER=surfer              # use Surfer instead
 make waves WAVE_MODULE=pe VIEWER=surfer
 make clean
@@ -134,7 +136,7 @@ make clean
 | `vectors` | Runs `model/gen_vectors.py --n 4 --random 100 --seed 1 --out build/vectors`. Override `N`, `RANDOM_CASES` or `SEED` on the command line. |
 | `sim-<module>` | Generates vectors, compiles all available RTL and `tb/tb_<module>.v` with Icarus `-g2005`, selects `tb_<module>` as the simulation top, then runs `vvp`. |
 | `test` | Generates vectors and runs every discovered `tb/tb_*.v`; a compilation error, nonzero simulator exit, `FAIL` line or missing `PASS` summary fails Make. |
-| `waves` | Runs `sim-systolic_top` then opens `build/tb_systolic_top.vcd`. Override `WAVE_MODULE`, `WAVE_FILE` and `VIEWER` as needed. |
+| `waves` | Runs `sim-systolic_top` then opens `build/tb_systolic_top.vcd` in GTKWave if installed, otherwise Surfer. Override `WAVE_MODULE`, `WAVE_FILE` and `VIEWER` as needed. |
 | `clean` | Deletes `build/` and the Make-created `sim/vectors` link. Leaves source, committed evidence, layouts and `.venv` alone. |
 
 Simulation executables, logs and waveforms belong in `build/` (gitignored).
@@ -173,7 +175,9 @@ Tool commands can be overridden with `PYTHON`, `IVERILOG`, `VVP` and
 (including PRs targeting `dev`) and pushes to `dev`. Ubuntu installs Icarus,
 Verilator and NumPy, then runs the same `make lint test` command. Failed jobs
 upload available `build/*.log` files as the `simulation-logs` artifact.
-CI does not open GUI viewers or build the report.
+CI also runs `python -m unittest discover -s tests -v` to check viewer
+selection with command-recording fixtures; it does not open GUI viewers
+or build the report.
 
 ## Build the Phase 1 report
 
