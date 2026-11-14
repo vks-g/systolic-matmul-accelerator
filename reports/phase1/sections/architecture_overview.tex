@@ -1,6 +1,6 @@
 % Proposed solution: system architecture overview (issue #5).
-% The system block diagram from #18 goes here as a figure once it lands in
-% docs/architecture/png/.
+% Fig. system.png comes from docs/architecture/ (#18); re-exporting it there
+% updates the report.
 
 \section{Proposed Solution}
 \subsection{Architecture Overview}
@@ -30,7 +30,14 @@ $T$ & compute cycles, $K + 2N - 2$ & 10 \\
 \end{tabular}
 \end{table}
 
-The design has five blocks behind one host interface:
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{system.png}
+\caption{System architecture. Solid arrows carry data and dashed arrows carry controller signals. Host writes reach the input skew buffers only while \texttt{busy} is low. Each buffer stores one matrix and selects its skewed lanes from \texttt{step}. The controller clears the array, enables it for $T$ steps and then captures the accumulators into the output buffer, which serves the read port.}
+\label{fig:system}
+\end{figure}
+
+The design has five blocks behind one host interface, shown in Fig.~\ref{fig:system}:
 \begin{itemize}
 \item \textbf{Two input skew buffers.} Each stores one operand matrix and feeds one edge of the array. The A buffer drives row $i$ of $A$ into the left edge $i$ cycles late. The B buffer drives column $j$ of $B$ into the top edge $j$ cycles late.
 \item \textbf{The systolic array.} An $N \times N$ grid of PEs. PE $(i,j)$ multiplies the operands that reach it, adds the product to its accumulator, which holds $C[i][j]$, and passes $A$ to the right and $B$ down one cycle later. The PE is described in Section~III-B and the skew in Section~III-C.
