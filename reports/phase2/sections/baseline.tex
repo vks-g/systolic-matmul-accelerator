@@ -1,7 +1,8 @@
 % Results and discussion: the sequential baseline and the measured comparison (issue #67).
-% Numbers come from results/phase2/baseline_cycles.csv (#64) and
-% results/phase1/cycle_counts.csv; the K_MAX and tiled rows and the synthesis
-% columns are added from #69 and #75.
+% Numbers come from results/phase2/baseline_cycles.csv (#64) and the array's
+% results/phase1/cycle_counts.csv, results/phase2/cycle_counts.csv and
+% results/phase2/tiled_cycles.csv (#69); the figure from model/perf_model.py (#73).
+% The resource comparison is added from the synthesis results (#75).
 
 \subsection{Comparison with a Sequential Baseline}
 A speed-up means little without a fair reference, so we built the best design that uses a single MAC unit and measured it in the same way as the array. The baseline, \texttt{seq\_matmul}, has exactly the parameters, ports and address map of the accelerator's top level, so the same testbench procedure and the same golden vectors drive both designs, and their results are compared bit for bit.
@@ -13,4 +14,37 @@ N^2 k_{\mathrm{len}}
 \end{equation}
 cycles, 64 for $N = k_{\mathrm{len}} = 4$. There is no clear or capture cycle. The running sum restarts at the first product of each element, from zero in a normal run and from the element's stored value in an accumulate run, and each finished element is written into $C$ in the cycle of its last product. The baseline therefore accumulates across chunks exactly as the array does, and a tiled product runs through it with the same host procedure (Section~III-E). One difference is visible to the host: the baseline overwrites $C$ element by element during a run, so $C$ is valid only from \texttt{done} until the next \texttt{start}, whereas the array keeps the previous $C$ readable until its capture cycle. Matching that would need a second $N \times N$ result store, $16 \times 32 = 512$ flip-flops for $N = 4$, which would inflate the baseline's area in the resource comparison below.
 
-On all 106 cases of the Phase~1 vector set ($k_{\mathrm{len}} = N = 4$), the baseline gives the same $C$ as the golden model and is busy for 64 cycles in every run, against 12 for the array. That is a speed-up of $64 / 12 = 5.3$ in busy cycles. Equation~\eqref{eq:basebusy} and the array's $k_{\mathrm{len}} + 2N$ busy cycles predict that the gap widens with the inner length: at $k_{\mathrm{len}} = K_{\max} = 16$ the baseline needs 256 cycles and the array 24, a speed-up of 10.7. The array's fill and drain cost $2N$ cycles per run whatever $k_{\mathrm{len}}$ is, while the baseline's time grows by $N^2$ cycles for every extra element of the inner dimension.
+The testbench drove the baseline through every vector set that the accelerator runs: the 106 Phase~1 cases, the 112 $K \neq N$ cases and the 26 tiled products, cut into tiles and accumulate chunks by the same host procedure. It gave the golden $C$ in every case, and every run was busy for exactly $N^2 k_{\mathrm{len}}$ cycles. With $k_{\mathrm{len}} = N = 4$ that is 64 cycles against 12 for the array, a speed-up of $64 / 12 = 5.3$ in busy cycles. At $k_{\mathrm{len}} = K_{\max} = 16$ it is 256 against 24, a speed-up of 10.7. The array's fill and drain cost $2N$ cycles per run whatever $k_{\mathrm{len}}$ is, while the baseline's time grows by $N^2$ cycles for every extra element of the inner dimension, so the gap widens with the run length.
+
+Table~\ref{tab:speedup} compares the two designs on the directed tiled products. In busy cycles the array is 7.5 to 11.0 times faster on the five directed products with more than one element, and the speed-up grows with the inner dimension $K$: the array pays its fill and drain once per chunk, while the baseline pays $N^2$ cycles for every element of $K$. On the smallest product, $1 \times 1 \times 1$, a single multiply-accumulate, the array's fill and drain dominate and the speed-up is only 1.8. Over all 26 products the busy-cycle speed-up ranges from 1.8 to 11.0.
+
+\begin{table}[t]
+\centering
+\caption{Measured cycles of the array and the baseline on the directed tiled products}
+\label{tab:speedup}
+\footnotesize
+\setlength{\tabcolsep}{3.2pt}
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+ & \multicolumn{3}{c}{Busy cycles} & \multicolumn{3}{c@{}}{Total cycles} \\
+\cmidrule(lr){2-4}\cmidrule(l){5-7}
+Product & Array & Base. & Speed-up & Array & Base. & Speed-up \\
+\midrule
+$8{\times}8{\times}8$ & 64 & 512 & 8.0 & 260 & 708 & 2.7 \\
+$5{\times}7{\times}6$ & 60 & 448 & 7.5 & 240 & 628 & 2.6 \\
+$4{\times}40{\times}4$ & 62 & 640 & 10.3 & 241 & 819 & 3.4 \\
+$9{\times}33{\times}7$ & 330 & 3168 & 9.6 & 1236 & 4074 & 3.3 \\
+$1{\times}1{\times}1$ & 9 & 16 & 1.8 & 30 & 37 & 1.2 \\
+$4{\times}64{\times}4$ & 93 & 1024 & 11.0 & 369 & 1300 & 3.5 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+End to end the picture changes. Both designs load the operands and read the result through the same one-element ports, so those cycles are the same for both, and they dominate the array's total. The total speed-up is 1.2 to 3.5 across the 26 products: 2.7 for the $8 \times 8 \times 8$ product, exactly as Section~III-E predicted, against 8.0 for the busy cycles alone. Fig.~\ref{fig:cycles} shows the same effect for square products up to $64 \times 64 \times 64$: for large products the array's busy time is about an order of magnitude below the baseline's, but its total is set by the ports. A faster host interface would raise the end-to-end speed-up towards the busy-cycle one.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.85\columnwidth]{cycles_vs_size}
+\caption{Cycles of an $S \times S$ by $S \times S$ product on the $4 \times 4$ array and on the baseline, from the cycle model, which matches every measured run and tiled product. Busy cycles are solid, and totals with loading and readout are dashed.}
+\label{fig:cycles}
+\end{figure}
