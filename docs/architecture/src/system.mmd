@@ -11,16 +11,16 @@ config:
       bottom: 16
 ---
 flowchart TB
-  accTitle: System architecture — output-stationary matrix multiplication
-  accDescr: The systolic_top host write ports load two input_skew_buffer instances only while busy is low. A storage and row skew and B storage and column skew feed the N by N systolic_array. Each PE retains its result. The output_buffer captures all accumulators and serves the host read port. Above the datapath, sa_controller accepts start, returns busy, done and cycle_count, and drives the listed control signals.
+  accTitle: System architecture — output-stationary matrix multiplication with run-time inner length and accumulate
+  accDescr: The systolic_top host write ports load two input_skew_buffer instances only while busy is low. A storage and row skew and B storage and column skew feed the N by N systolic_array. Each PE retains its result. The output_buffer captures all accumulators and serves the host read port. Above the datapath, sa_controller samples k_len and accumulate with start, returns busy, done and cycle_count, and drives the listed control signals. An accumulate run skips the clear, so the tile adds onto the previous result.
 
   subgraph top["systolic_top"]
     direction TB
-    ctrl["sa_controller<br/>Host: start in; busy, done, cycle_count out<br/>busy → write gating; en, step → skew buffers<br/>clear, en → array; capture → output buffer"]
+    ctrl["sa_controller<br/>Host: start, k_len (1…K_MAX), accumulate in; busy, done, cycle_count out<br/>k_len, accumulate sampled with start; held as run_k_len<br/>busy → write gating; en, step, run_k_len → skew buffers<br/>clear (skipped when accumulate), en → array; capture → output buffer"]
     subgraph datapath["Datapath"]
       direction LR
       wr["A/B write ports<br/>we / addr / wdata<br/>when !busy"]
-      buffers["input_skew_buffer ×2<br/>N × N storage each<br/>A: row skew<br/>B: column skew"]
+      buffers["input_skew_buffer ×2<br/>A: N rows × K_MAX, row skew<br/>B: K_MAX rows × N, column skew<br/>lanes from step and run_k_len"]
       arr["systolic_array<br/>N × N PEs<br/>C stays local"]
       obuf["output_buffer<br/>capture / hold C<br/>c_addr → c_rdata"]
       wr --> buffers
@@ -28,7 +28,7 @@ flowchart TB
       arr -->|"acc_flat"| obuf
     end
     ctrl -.-> datapath
-    shared["Shared clk; synchronous active-low rst_n<br/>Defaults: N = 4, DATA_W = 8, ACC_W = 32"]
+    shared["Shared clk; synchronous active-low rst_n<br/>Defaults: N = 4, K_MAX = 16, DATA_W = 8, ACC_W = 32"]
     datapath ~~~ shared
   end
   classDef control fill:#fff3d6,stroke:#8b6016,color:#13263d
