@@ -51,7 +51,14 @@ The host sees a small matrix data interface. It writes $A$ and $B$ one element a
 
 A normal run spends one cycle clearing every accumulator and forwarding register, then $T = k_{\mathrm{len}} + 2N - 2$ compute steps in which the skewed operands cross the array and every PE adds its $k_{\mathrm{len}}$ products, and one more cycle copying the accumulators into the output buffer before \texttt{done} rises. \texttt{busy} is therefore high for $k_{\mathrm{len}} + 2N$ cycles: 12 for $k_{\mathrm{len}} = 4$ and 24 for $k_{\mathrm{len}} = K_{\max} = 16$. An accumulate run skips the clear and takes one cycle fewer.
 
-The sequential baseline that the results compare against, \texttt{seq\_matmul}, has exactly the same ports and address map, so the same testbenches and the live demonstration drive both designs. It contains one multiplier and one adder with the same arithmetic as the PE, computes $C$ one element at a time, and is busy for $N^2 k_{\mathrm{len}}$ cycles per run.
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{seq_baseline.png}
+\caption{The sequential baseline, \texttt{seq\_matmul}. It keeps the same host ports and address map as the accelerator, and computes $C$ with one multiplier and one adder, one element at a time. The running sum restarts at zero, or at the stored element on an accumulate run.}
+\label{fig:seqbaseline}
+\end{figure}
+
+The sequential baseline that the results compare against, \texttt{seq\_matmul}, has exactly the same ports and address map, so the same testbenches and the live demonstration drive both designs. As Fig.~\ref{fig:seqbaseline} shows, it contains one multiplier and one adder with the same arithmetic as the PE, computes $C$ one element at a time, and is busy for $N^2 k_{\mathrm{len}}$ cycles per run.
 
 The array performs $N^2 = 16$ MACs per cycle at its peak. A run performs $N^2 k_{\mathrm{len}}$ MACs in $T$ compute cycles, against $N^2 k_{\mathrm{len}}$ cycles for the baseline, a compute speed-up of $N^2 k_{\mathrm{len}}/T$: 6.4 for $k_{\mathrm{len}} = 4$ and 11.6 for $k_{\mathrm{len}} = 16$. Each PE is busy for $k_{\mathrm{len}}$ of the $T$ cycles, so utilization rises from 40\,\% at $k_{\mathrm{len}} = 4$ to 72.7\,\% at $k_{\mathrm{len}} = 16$, because the wavefront's $2N - 2$ cycles of fill and drain are paid once per run. Loading a run's operands through the one-element ports takes $N k_{\mathrm{len}}$ cycles, more than the run itself, so end to end the ports, not the array, limit throughput (Section~V).
 
