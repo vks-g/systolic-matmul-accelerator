@@ -5,7 +5,9 @@
 # Usage: sh synth/yosys/run_synth.sh <top> <N> <outdir>   (from the repo root)
 #
 # Writes, under <outdir>:
-#   <top>_n<N>.yosys.log     synthesis log; the last stat block has the cells
+#   <top>_n<N>.yosys.log     synthesis evidence: header, warnings and errors,
+#                            and the final cell statistics (the verbose
+#                            per-pass detail stays in build/synth/, gitignored)
 #   <top>_n<N>.nextpnr.log   place-and-route log with the timing summary
 #   <top>_n<N>.timing.json   nextpnr timing report (Fmax and critical paths)
 # Netlists and bitstream-level outputs go to build/synth/ (gitignored).
@@ -34,13 +36,25 @@ mkdir -p "$OUT" build/synth
 # RTL tree serves every array size. The file list must stay on one line:
 # yosys treats each newline in -p as a new command.
 RTL_FILES=$(find rtl -type f -name '*.v' | sort | tr '\n' ' ')
+FULL_LOG=build/synth/${TOP}_n${N}.yosys.full.log
 # shellcheck disable=SC2086
-"$YOSYS" -l "$OUT/${TOP}_n${N}.yosys.log" -p "
+"$YOSYS" -l "$FULL_LOG" -p "
 read_verilog -I rtl/include $RTL_FILES
 chparam -set N $N $TOP
 synth_ecp5 -top $TOP -json $NETLIST
 stat
 "
+
+# The full yosys log is 130-180 KB of per-pass process output. The committed
+# log keeps the run header, every warning and error, and the final statistics
+# block that the summary CSV is parsed from; the rest stays in build/synth/.
+{
+    head -n 30 "$FULL_LOG"
+    echo "[...] per-pass synthesis detail is not committed; the full log is"
+    echo "[...] build/synth/${TOP}_n${N}.yosys.full.log after make synth"
+    grep -E '^(Warning|ERROR)' "$FULL_LOG" || true
+    awk '/Printing statistics\./{p=NR} {lines[NR]=$0} END{for(i=p;i<=NR;i++)print lines[i]}' "$FULL_LOG"
+} > "$OUT/${TOP}_n${N}.yosys.log"
 
 # LFE5U-25F, CABGA256 package, commercial -6 speed grade (the common
 # LFE5U-25F-6BG256C variant). --seed 1 pins placement so a fresh clone
