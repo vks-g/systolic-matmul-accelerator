@@ -5,21 +5,7 @@ The controller sequences one matrix multiplication through five states, shown in
 
 \begin{figure}[t]
 \centering
-\begin{tikzpicture}[>=Stealth, font=\footnotesize,
-  st/.style={draw, rounded corners=2pt, minimum width=15mm, minimum height=6mm, align=center},
-  lab/.style={font=\scriptsize}]
-  \node[st] (idle) {IDLE};
-  \node[st, right=10mm of idle] (clear) {CLEAR};
-  \node[st, right=10mm of clear] (comp) {COMPUTE};
-  \node[st, below=8mm of comp] (cap) {CAPTURE};
-  \node[st, below=8mm of clear] (done) {DONE};
-  \draw[->] (idle) -- node[above, lab] {start} (clear);
-  \draw[->] (clear) -- (comp);
-  \draw[->] (comp) -- node[right, lab] {$\mathrm{step} = T{-}1$} (cap);
-  \draw[->] (cap) -- (done);
-  \draw[->] (done) -- node[left, lab] {start} (clear);
-  \draw[->] (comp.north west) ++(3mm,0) .. controls +(-2mm,7mm) and +(2mm,7mm) .. node[above, lab] {$\mathrm{step} < T{-}1$} ([xshift=-3mm]comp.north east);
-\end{tikzpicture}
-\caption{Controller state-transition diagram. \texttt{busy} is high in \texttt{CLEAR}, \texttt{COMPUTE} and \texttt{CAPTURE}.}
+\includegraphics[width=\columnwidth]{controller.png}
+\caption{Controller state-transition diagram, including the Phase~2 \texttt{accumulate} path (issue \#76 export). A normal \texttt{start} passes through \texttt{CLEAR}; an accumulate \texttt{start} goes straight to \texttt{COMPUTE}, so the run adds onto the previous accumulators. \texttt{busy} is high in \texttt{CLEAR}, \texttt{COMPUTE} and \texttt{CAPTURE}.}
 \label{fig:fsm}
 \end{figure}
