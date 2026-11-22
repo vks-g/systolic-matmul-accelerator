@@ -169,6 +169,62 @@ as required by the spec; Make does not override RTL or testbench parameters.
 Tool commands can be overridden with `PYTHON`, `IVERILOG`, `VVP` and
 `VERILATOR`. Installed tools are required when their inputs exist.
 
+## Synthesis (Phase 2)
+
+`make synth` (#75) needs Yosys and nextpnr-ecp5. Install them with the
+[YosysHQ OSS CAD Suite](https://github.com/YosysHQ/oss-cad-suite-build), a
+single archive that bundles both (plus Icarus, Verilator and GTKWave, so it
+can replace the earlier installs). Download the newest `oss-cad-suite-*`
+archive for your platform from its
+[releases page](https://github.com/YosysHQ/oss-cad-suite-build/releases).
+
+### macOS
+
+Pick `darwin-arm64` (Apple silicon) or `darwin-x64` (Intel). In Terminal:
+
+```sh
+mkdir -p "$HOME/opt"
+tar -xzf ~/Downloads/oss-cad-suite-darwin-*.tgz -C "$HOME/opt"
+source "$HOME/opt/oss-cad-suite/environment"
+```
+
+The `source` line puts the tools on `PATH` for the current shell only; add it
+to your `~/.zshrc` to keep it. The first run of each tool may need approval
+under System Settings > Privacy & Security because the archive is not
+notarized.
+
+### Linux (Ubuntu / Debian)
+
+```sh
+sudo mkdir -p /opt
+sudo tar -xzf ~/Downloads/oss-cad-suite-linux-x64-*.tgz -C /opt
+source /opt/oss-cad-suite/environment
+```
+
+Add the `source` line to your `~/.bashrc` to keep the tools on `PATH`.
+
+### Windows (WSL2)
+
+Follow the YosysHQ recommendation and use the Linux build inside the WSL2
+Ubuntu set up above: download the `linux-x64` archive in Ubuntu and run the
+Linux commands. A native `windows-x64` archive also exists; after extracting
+it, `start.bat` in the `oss-cad-suite` folder opens a shell with the tools on
+`PATH`.
+
+### Check the synthesis tools
+
+```sh
+yosys -V
+nextpnr-ecp5 --version
+make synth
+```
+
+`make synth` synthesizes `systolic_top` at N = 2, 3, 4 and 8 (8 only if it
+fits the device) plus the `seq_matmul` baseline at N = 4 for the Lattice ECP5
+LFE5U-25F, then writes logs, `synth_summary.csv` and `critical_paths.md` to
+`results/phase2/synth/`. See [`synth/README.md`](../synth/README.md) for the
+constraint, device variant and skip behaviour.
+
 ## CI
 
 [`.github/workflows/sim.yml`](../.github/workflows/sim.yml) runs on every PR
@@ -178,6 +234,10 @@ upload available `build/*.log` files as the `simulation-logs` artifact.
 CI also runs `python -m unittest discover -s tests -v` to check viewer
 selection with command-recording fixtures; it does not open GUI viewers
 or build the report.
+
+[`.github/workflows/synth.yml`](../.github/workflows/synth.yml) runs the same
+`make synth` sweep on PRs and pushes to `dev`: it downloads the OSS CAD
+Suite, synthesizes every configuration and prints the summary CSV.
 
 ## Build the Phase 1 report
 
