@@ -15,15 +15,17 @@ An accumulate run goes straight from \texttt{IDLE} or \texttt{DONE} to \texttt{C
   \node[st] (idle) {IDLE};
   \node[st, right=10mm of idle] (clear) {CLEAR};
   \node[st, right=10mm of clear] (comp) {COMPUTE};
-  \node[st, below=8mm of comp] (cap) {CAPTURE};
-  \node[st, below=8mm of clear] (done) {DONE};
+  \node[st, below=10mm of comp] (cap) {CAPTURE};
+  \node[st, below=10mm of clear] (done) {DONE};
   \draw[->] (idle) -- node[above, lab] {start} (clear);
   \draw[->] (clear) -- (comp);
   \draw[->] (comp) -- node[right, lab] {$\mathrm{step} = T{-}1$} (cap);
   \draw[->] (cap) -- (done);
   \draw[->] (done) -- node[left, lab] {start} (clear);
-  \draw[->] (comp.north west) ++(3mm,0) .. controls +(-2mm,7mm) and +(2mm,7mm) .. node[above, lab] {$\mathrm{step} < T{-}1$} ([xshift=-3mm]comp.north east);
+  \draw[->, dashed] (idle.north) .. controls +(0,9mm) and +(-4mm,9mm) .. node[above, lab, pos=0.45] {start, accumulate} ([xshift=-4mm]comp.north);
+  \draw[->, dashed] (done.east) -- node[below, lab, sloped] {start, acc.} ([yshift=-1mm]comp.south west);
+  \draw[->] ([xshift=4mm]comp.north) .. controls +(1mm,7mm) and +(8mm,4mm) .. node[right, lab] {$\mathrm{step} < T{-}1$} (comp.east);
 \end{tikzpicture}
-\caption{Controller state-transition diagram. \texttt{busy} is high in \texttt{CLEAR}, \texttt{COMPUTE} and \texttt{CAPTURE}.}
+\caption{Controller state-transition diagram, with $T = k_{\mathrm{len}} + 2N - 2$. A start with \texttt{accumulate} high (dashed) skips \texttt{CLEAR}. Starts are accepted only with $1 \le k_{\mathrm{len}} \le K_{\max}$. \texttt{busy} is high in \texttt{CLEAR}, \texttt{COMPUTE} and \texttt{CAPTURE}.}
 \label{fig:fsm}
 \end{figure}
