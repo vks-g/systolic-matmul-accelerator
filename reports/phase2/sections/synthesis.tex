@@ -3,7 +3,7 @@
 % `make synth` (synth/yosys/run_synth.sh).
 
 \subsection{Synthesis Results}
-We synthesize both designs for the Lattice ECP5 LFE5U-25F with the open-source flow in \path{synth/yosys/}. Yosys runs \texttt{synth\_ecp5} on the RTL, and nextpnr-ecp5 places and routes the netlist with the fixed seed 1, so repeated runs give identical numbers. The flow reports the number of 4-input LUTs, flip-flops (\texttt{TRELLIS\_FF}) and 18-bit multipliers (\texttt{MULT18X18D}), and the maximum clock frequency after routing. Only the clock is constrained, at 100~MHz, because the flow measures the design without a board. The LFE5U-25F offers 56 multipliers.
+We synthesize both designs for the Lattice ECP5 LFE5U-25F with the open-source flow in \path{synth/yosys/}. Yosys runs \texttt{synth\_ecp5} on the RTL, and nextpnr-ecp5 places and routes the netlist with the fixed seed 1, so repeated runs give identical numbers. The flow reports the number of 4-input LUTs, flip-flops (\texttt{TRELLIS\_FF}) and 18-bit multipliers (\texttt{MULT18X18D}), and the maximum clock frequency after routing. Only the clock is constrained, at 100~MHz, because the flow measures the design without a board. The LFE5U-25F offers 28 multiplier blocks (	exttt{MULT18X18D}) and 56 block-RAMs (	exttt{DP16KD}).
 
 \begin{table}[t]
 \centering
@@ -22,7 +22,7 @@ Design & $N$ & LUT4 & FF & MULT & $F_{\max}$ (MHz) \\
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:synth} gives the results. The array uses 4, 11 and 16 multipliers for $N = 2$, 3 and 4, close to the $N^2$ of one per PE. The sequential baseline uses a single multiplier, as designed. At $N = 4$ the array needs 1.4 times the flip-flops of the baseline (2287 against 1617) and 33\,\% fewer LUTs (2506 against 3735). $N = 8$ does not fit: it needs 64 multipliers and the device has 56, so place and route stops at the packing step. The flow therefore covers $N = 2$, 3 and 4.
+Table~\ref{tab:synth} gives the results. The array uses 4, 11 and 16 multipliers for $N = 2$, 3 and 4, close to the $N^2$ of one per PE. The sequential baseline uses a single multiplier, as designed. At $N = 4$ the array needs 1.4 times the flip-flops of the baseline (2287 against 1617) and 33\,\% fewer LUTs (2506 against 3735). $N = 8$ does not fit: it needs 64 multipliers and the device has 28, so place and route stops at the packing step. The flow therefore covers $N = 2$, 3 and 4.
 
 No configuration meets the 100~MHz constraint, so the maximum frequencies are 38 to 60~MHz and the array at $N = 4$ reaches 56.83~MHz, 9\,\% above the baseline's 52.16~MHz. The frequency does not fall steadily with $N$: the $N = 3$ result is the lowest because its critical path crosses two long routed nets between the buffer and the accumulator (26.27~ns), while the $N = 2$ and $N = 4$ paths cross four and three shorter ones (16.56 and 17.60~ns). We read this as placement variation rather than a property of the design, and we did not tune the seed.
 
