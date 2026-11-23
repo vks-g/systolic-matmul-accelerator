@@ -22,7 +22,7 @@ INCLUDES := $(addprefix -I,$(INCLUDE_DIRS))
 TESTBENCHES := $(sort $(wildcard tb/tb_*.v))
 MODULES := $(patsubst tb/tb_%.v,%,$(TESTBENCHES))
 
-.PHONY: help lint vectors test waves synth clean FORCE
+.PHONY: help lint vectors test waves demo synth clean FORCE
 
 help:
 	@echo 'make lint           Lint all available RTL with Verilator -Wall'
@@ -30,6 +30,7 @@ help:
 	@echo 'make sim-<module>   Compile and run tb/tb_<module>.v'
 	@echo 'make test           Generate vectors and run all available testbenches'
 	@echo 'make waves          Run systolic_top and open its VCD (GTKWave or Surfer)'
+	@echo 'make demo           Multiply one product on the array and the baseline (M= K= P= SEED= A= B= WAVES=1)'
 	@echo 'make synth          Synthesize the array (N=$(SYNTH_N)) and baseline for ECP5'
 	@echo 'make clean          Remove build outputs and the generated vector link'
 
@@ -108,6 +109,15 @@ waves: sim-$(WAVE_MODULE)
 		echo 'ERROR: waveform viewer not found; install GTKWave or Surfer (docs/setup.md), or set VIEWER=/path/to/viewer'; \
 		exit 1; \
 	else $(VIEWER) "$(WAVE_FILE)"; fi
+
+# Live demonstration (#70): one product of any size on systolic_top and seq_matmul,
+# checked against NumPy, with both cycle counts. Random M x K by K x P matrices from
+# SEED, or your own with A=file B=file; WAVES=1 opens the last tile waveform.
+DEMO_ARGS = $(if $(M),--m $(M)) $(if $(K),--k $(K)) $(if $(P),--p $(P)) --seed $(SEED) \
+	$(if $(A),--a $(A)) $(if $(B),--b $(B)) $(if $(WAVES),--waves)
+
+demo:
+	@$(PYTHON) model/demo.py $(DEMO_ARGS)
 
 # Synthesize systolic_top at each N in SYNTH_N plus the sequential baseline
 # (N=4) for the Lattice ECP5 LFE5U-25F, then collect logs into the summary

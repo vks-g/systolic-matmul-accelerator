@@ -31,7 +31,9 @@ make synth SYNTH_N="2 4"  # choose the array sizes
 
 Logs, the timing reports, `synth_summary.csv` and `critical_paths.md` land in
 `results/phase2/synth/` and are committed as evidence; intermediate netlists
-go to `build/synth/` (gitignored). Results are deterministic for a fixed
-OSS CAD Suite version because placement uses a fixed seed.
+go to `build/synth/` (gitignored). The committed results were generated with
+OSS CAD Suite release `2026-11-22`, Yosys `0.71+77` and nextpnr-ecp5 `0.10`.
+The workflow pins that release. Results are deterministic for this toolchain
+because placement uses a fixed seed.
 
 Nothing here is required for Phase 1.
