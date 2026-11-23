@@ -1,0 +1,35 @@
+name: Synthesis
+
+on:
+  pull_request:
+  push:
+    branches: [dev]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  synth:
+    name: ECP5 synthesis sweep
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the OSS CAD Suite (yosys, nextpnr-ecp5)
+        run: |
+          tag=2026-11-22
+          datepart=$(echo "$tag" | tr -d '-')
+          curl -fsSL -o /tmp/oss-cad-suite.tgz \
+            "https://github.com/YosysHQ/oss-cad-suite-build/releases/download/${tag}/oss-cad-suite-linux-x64-${datepart}.tgz"
+          sudo tar -xzf /tmp/oss-cad-suite.tgz -C /opt
+          echo "/opt/oss-cad-suite/bin" >> "$GITHUB_PATH"
+      - name: Run the synthesis sweep
+        run: make synth
+      - name: Check the committed summary
+        run: git diff --exit-code -- results/phase2/synth/synth_summary.csv
+      - name: Show the summary CSV
+        run: cat results/phase2/synth/synth_summary.csv
