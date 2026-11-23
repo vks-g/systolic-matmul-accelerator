@@ -3,7 +3,7 @@
 % `make synth` (synth/yosys/run_synth.sh).
 
 \subsection{Synthesis Results}
-We synthesize both designs for the Lattice ECP5 LFE5U-25F with the open-source flow in \path{synth/yosys/}. Yosys runs \texttt{synth\_ecp5} on the RTL, and nextpnr-ecp5 places and routes the netlist with the fixed seed 1, so repeated runs give identical numbers. The flow reports the number of 4-input LUTs, flip-flops (\texttt{TRELLIS\_FF}) and 18-bit multipliers (\texttt{MULT18X18D}), and the maximum clock frequency after routing. Only the clock is constrained, at 100~MHz, because the flow measures the design without a board. The LFE5U-25F offers 28 multiplier blocks (	exttt{MULT18X18D}) and 56 block-RAMs (	exttt{DP16KD}).
+We synthesize both designs for the Lattice ECP5 LFE5U-25F with the open-source flow in \path{synth/yosys/}. Yosys runs \texttt{synth\_ecp5} on the RTL, and nextpnr-ecp5 places and routes the netlist with the fixed seed 1, so repeated runs give identical numbers. The flow reports the number of 4-input LUTs, flip-flops (\texttt{TRELLIS\_FF}) and 18-bit multipliers (\texttt{MULT18X18D}), and the maximum clock frequency after routing. Only the clock is constrained, at 100~MHz, because the flow measures the design without a board. The LFE5U-25F offers 28 multiplier blocks (\texttt{MULT18X18D}) and 56 block-RAMs (\texttt{DP16KD}).
 
 \begin{table}[t]
 \centering
