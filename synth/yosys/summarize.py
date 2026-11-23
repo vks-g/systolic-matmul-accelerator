@@ -105,7 +105,7 @@ def main():
         sys.exit(f"no synthesis logs found in {out}; run make synth first")
     rows.sort(key=lambda r: (r["design"] != "systolic_top", r["N"]))
     with open(out / "synth_summary.csv", "w", newline="") as fh:
-        writer = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
+        writer = csv.DictWriter(fh, fieldnames=list(rows[0].keys()), lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
     (out / "critical_paths.md").write_text("\n".join(paths_md))
