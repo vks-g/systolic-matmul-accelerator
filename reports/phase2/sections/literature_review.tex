@@ -53,7 +53,7 @@ These results show two trends that apply to our design. First, the 1D and 2D arr
 
 \begin{table}[t]
 \centering
-\caption{Published FPGA systolic arrays. CNN is the third convolution layer of VGG-16 and MM is matrix multiplication. DSP is the percentage of the device's DSP blocks used.}
+\caption{Published FPGA systolic arrays and this work. CNN is the third convolution layer of VGG-16 and MM is matrix multiplication. DSP is the percentage of the device's DSP blocks used. This work's throughput is for runs with $k_{\mathrm{len}} = 16$, counting a multiply-accumulate as two operations.}
 \label{tab:fpgacompare}
 \footnotesize
 \setlength{\tabcolsep}{3pt}
@@ -65,6 +65,8 @@ Wei~\cite{wei2017automated} & CNN & Arria 10 & FP32 & 253 & 81\,\% & 0.60 TFLOP/
 PolySA~\cite{cong2018polysa} & MM & VU9P & FP32 & 229 & 89\,\% & 0.56 TFLOP/s \\
 AutoSA~\cite{wang2021autosa} & MM & U250 & FP32 & 300 & 68\,\% & 0.93 TFLOP/s \\
 AutoSA~\cite{wang2021autosa} & MM & U250 & int8 & 300 & 52\,\% & 6.95 TOP/s \\
+\midrule
+This work & MM & ECP5-25F & int8 & 56.8 & 57\,\% & 1.2 GOP/s \\
 \bottomrule
 \end{tabular}
 \end{table}
