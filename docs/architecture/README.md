@@ -93,14 +93,14 @@ so the output buffer receives the complete result.
 
 ### Tiling
 
-![An 8 by 12 times 12 by 8 product split into K chunks of 8 and 4 and four N by N output tiles, with one normal and one accumulate run per tile.](svg/tiling.svg)
+![An 8 by 20 times 20 by 8 product split into K chunks of 16 and 4 and four 4 by 4 output tiles, with one normal and one accumulate run per tile.](svg/tiling.svg)
 
 The array holds one `N × N` tile of `C`, and the buffers hold at most
 `K_MAX` of the inner dimension, so a larger product runs as tiles × chunks
-(spec §12). The example is an 8×12 by 12×8 product on the default array
-(`N = 4`, `K_MAX = 16` shown as chunks of 8 and 4 for a two-chunk picture):
-`C` splits into four `N × N` output tiles and `K` into
-`ceil(K/K_MAX)` chunks. Each tile takes one **normal** run for its first
+(spec §12). The example is the default demo's 8×20 by 20×8 product on the
+default array (`N = 4`, `K_MAX = 16`): `C` splits into four `N × N` output
+tiles and `K` into chunks 0–15 and 16–19 (`k_len = 4` for the last chunk).
+Each tile takes one **normal** run for its first
 chunk and one **accumulate** run per later chunk; partial sums stay in the
 PEs between chunks and only the finished tile is read. Rows of A beyond `M`
 and columns of B beyond `P` are zero-padded, and a short last chunk runs
@@ -108,7 +108,7 @@ with a smaller `k_len`.
 
 ### Sequential baseline
 
-![Block diagram of seq_matmul: the same host ports, operand storage, row/column/k counters, one multiplier and adder, the running-sum register and the per-element C store.](svg/seq_baseline.svg)
+![Compact block diagram of seq_matmul: the same host ports, operand storage, counters, one multiplier and adder, running-sum register and C store.](svg/seq_baseline.svg)
 
 [`rtl/baseline/seq_matmul.v`](../../rtl/baseline/seq_matmul.v) keeps the
 same ports, address map and host protocol as `systolic_top`, so the same

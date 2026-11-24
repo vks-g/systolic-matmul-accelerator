@@ -1,48 +1,37 @@
 ---
 config:
   flowchart:
-    nodeSpacing: 18
-    rankSpacing: 34
-    padding: 8
-    wrappingWidth: 320
+    nodeSpacing: 20
+    rankSpacing: 28
+    padding: 10
+    wrappingWidth: 280
 ---
-flowchart LR
-  accTitle: Tiling a product larger than the array into output tiles and K chunks
-  accDescr: C, 8 by 8, splits into four N by N output tiles. The inner dimension K = 12 splits into chunks of K_MAX = 8 and 4. Each tile takes one normal run per first chunk and one accumulate run per later chunk. Example: tile C11 needs run 1 on A rows 4 to 7, k 0 to 7 and B k 0 to 7, columns 4 to 7 with a normal start, then run 2 on the k 8 to 11 chunk with accumulate high and k_len 4.
+flowchart TB
+  accTitle: Tiling an 8 by 20 times 20 by 8 product on a 4 by 4 array
+  accDescr: The output C is four 4 by 4 tiles. Each output tile uses the matching four A rows and four B columns. For each tile, run once with k 0 through 15 and accumulate low, then run with k 16 through 19, k_len 4, and accumulate high. The first run clears the partial sum; the second adds to it.
 
-  subgraph GA["A: 8 × 12 — row blocks × K chunks"]
-    direction TB
-    A0["rows 0–3<br/>k 0–7"]
-    A1["rows 0–3<br/>k 8–11 (k_len 4)"]
-    A2["rows 4–7<br/>k 0–7"]
-    A3["rows 4–7<br/>k 8–11 (k_len 4)"]
-  end
-  subgraph GB["B: 12 × 8 — K chunks × column blocks"]
-    direction TB
-    B0["k 0–7<br/>cols 0–3"]
-    B1["k 0–7<br/>cols 4–7"]
-    B2["k 8–11<br/>cols 0–3"]
-    B3["k 8–11<br/>cols 4–7"]
-  end
-  subgraph GC["C: 8 × 8 — N × N output tiles"]
-    direction TB
-    C00["tile (0,0)"]
-    C01["tile (0,1)<br/>same pattern"]
-    C10["tile (1,0)<br/>same pattern"]
-    C11["tile (1,1)"]
-  end
-  A0 -->|"run 1: normal start"| C00
-  A1 -->|"run 2: accumulate"| C00
-  B0 -.-> C00
-  B2 -.-> C00
-  A2 -->|"run 1: normal start"| C11
-  A3 -->|"run 2: accumulate (k_len 4)"| C11
-  B1 -.-> C11
-  B3 -.-> C11
+  product["A: 8 × 20  ·  B: 20 × 8<br/>N = 4  ·  K_MAX = 16"]
+  split["K chunks: 0–15 (k_len 16)  →  16–19 (k_len 4)<br/>A splits by row blocks; B splits by column blocks"]
+  product --> split
 
-  note1["Per tile: chunk 0 runs with a normal start;<br/>every later chunk runs with accumulate high.<br/>Partial sums stay in the PEs between chunks;<br/>only the finished tile is read.<br/>Rows beyond M and columns beyond P are zero-padded."]
-  GC ~~~ note1
+  subgraph outputs["C: 8 × 8, four 4 × 4 output tiles"]
+    direction TB
+    subgraph row0["C rows 0–3"]
+      direction LR
+      c00["Tile (0,0)<br/>A rows 0–3 · B cols 0–3"]
+      c01["Tile (0,1)<br/>A rows 0–3 · B cols 4–7"]
+    end
+    subgraph row1["C rows 4–7"]
+      direction LR
+      c10["Tile (1,0)<br/>A rows 4–7 · B cols 0–3"]
+      c11["Tile (1,1)<br/>A rows 4–7 · B cols 4–7"]
+    end
+  end
+  split --> outputs
+  note["For each tile: run k 0–15 normally, then k 16–19 with accumulate high.<br/>The first run initializes C; the second keeps the partial sum.<br/>Load its A row block and B column block; read C when complete.<br/>Pad rows or columns beyond M or P with zero."]
+  outputs -.-> note
+
   classDef tile fill:#dce9f7,stroke:#2c5d8f,color:#13263d
   classDef note fill:#f3f5f8,stroke:#60758b,color:#13263d
-  class C00,C01,C10,C11 tile
-  class note1 note
+  class c00,c01,c10,c11 tile
+  class note note
