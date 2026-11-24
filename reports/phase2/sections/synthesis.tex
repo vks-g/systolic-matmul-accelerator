@@ -1,0 +1,29 @@
+% Results and Discussion: synthesis results (issue #78).
+% Every number comes from results/phase2/synth/synth_summary.csv, written by
+% `make synth` (synth/yosys/run_synth.sh).
+
+\subsection{Synthesis Results}
+We synthesize both designs for the Lattice ECP5 LFE5U-25F with the open-source flow in \path{synth/yosys/}. Yosys runs \texttt{synth\_ecp5} on the RTL, and nextpnr-ecp5 places and routes the netlist with the fixed seed 1, so repeated runs give identical numbers. The flow reports the number of 4-input LUTs, flip-flops (\texttt{TRELLIS\_FF}) and 18-bit multipliers (\texttt{MULT18X18D}), and the maximum clock frequency after routing. Only the clock is constrained, at 100~MHz, because the flow measures the design without a board. The LFE5U-25F offers 28 multiplier blocks (\texttt{MULT18X18D}) and 56 block-RAMs (\texttt{DP16KD}).
+
+\begin{table}[t]
+\centering
+\caption{Synthesis results on the LFE5U-25F, 100~MHz constraint}
+\label{tab:synth}
+\footnotesize
+\begin{tabular}{@{}llrrrr@{}}
+\toprule
+Design & $N$ & LUT4 & FF & MULT & $F_{\max}$ (MHz) \\
+\midrule
+\texttt{systolic\_top} & 2 & 1243 & 847 & 4 & 60.40 \\
+\texttt{systolic\_top} & 3 & 2495 & 1487 & 11 & 38.06 \\
+\texttt{systolic\_top} & 4 & 2506 & 2287 & 16 & 56.83 \\
+\texttt{seq\_matmul} & 4 & 3735 & 1617 & 1 & 52.16 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:synth} gives the results. The array uses 4, 11 and 16 multipliers for $N = 2$, 3 and 4. At $N = 2$ and 4 that is one per PE. Nine of the eleven at $N = 3$ are the PEs; the other two are in the B skew buffer, whose read address $kN + l$ is a true multiplication when $N$ is not a power of two. For $N = 2$ and 4 it is a shift. The sequential baseline uses a single multiplier, as designed. At $N = 4$ the array needs 1.4 times the flip-flops of the baseline (2287 against 1617) and 33\,\% fewer LUTs (2506 against 3735). $N = 8$ does not fit: it needs 64 multipliers and the device has 28, so place and route stops at the packing step. The flow therefore covers $N = 2$, 3 and 4.
+
+No configuration meets the 100~MHz constraint, so the maximum frequencies are 38 to 60~MHz and the array at $N = 4$ reaches 56.83~MHz, 9\,\% above the baseline's 52.16~MHz. The frequency does not fall steadily with $N$. At $N = 3$ the critical path runs through one of those B-buffer multipliers and then through the PE multiplier, two multipliers in series, so its logic delay is 14.1~ns against 8.7 to 9.0~ns for $N = 2$ and 4 (26.27~ns in total, against 16.56 and 17.60~ns). Keeping $N$ a power of two keeps the buffer addressing free.
+
+\textbf{Critical path.} In all three array sizes the slowest path runs from a skew-buffer counter (\texttt{step} or \texttt{t}) through the multiplier and adder of a PE to its accumulator: the lane selection in \path{rtl/buffers/input_skew_buffer.v} feeds the combinational multiply-accumulate of \path{rtl/pe/mac.v}. At $N = 3$ the path also crosses the B-buffer address multiplier. The baseline's slowest path runs from its column index to the result store (19.17~ns). This path is the main limit on the clock. Registering the buffer outputs before the multiplier would cut it at the price of one more pipeline cycle per run, which we leave as future work. The complete paths with their source lines are in \path{results/phase2/synth/critical_paths.md}.

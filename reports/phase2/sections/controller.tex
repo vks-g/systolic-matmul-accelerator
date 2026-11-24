@@ -1,0 +1,31 @@
+% Proposed solution: controller FSM (issue #9; final-report update in #67).
+
+\subsection{Controller}
+The controller sequences one run through five states, shown in Fig.~\ref{fig:fsm}. Its outputs are decoded from the state register, so they change only on clock edges. A \texttt{start} pulse is accepted only in \texttt{IDLE} and \texttt{DONE}, and only when $1 \le k_{\mathrm{len}} \le K_{\max}$. On an accepted start the controller copies $k_{\mathrm{len}}$ into a register, \texttt{run\_k\_len}, which sets the length of this run and tells both skew buffers which elements to send. It samples \texttt{accumulate} at the same edge. Changing either input during a run therefore has no effect, and a \texttt{start} with $k_{\mathrm{len}} = 0$ or above $K_{\max}$ leaves the state, \texttt{run\_k\_len} and \texttt{cycle\_count} unchanged.
+
+A normal run begins in \texttt{CLEAR}, which zeroes the accumulators and forwarding registers. \texttt{COMPUTE} then runs for $T = k_{\mathrm{len}} + 2N - 2$ steps: the last PE, $(N{-}1, N{-}1)$, adds its last product in step $T-1$. The controller compares the step counter with this run's $T$, computed from \texttt{run\_k\_len}, so the counter is sized for the longest run, $T_{\max} = K_{\max} + 2N - 2 = 22$, and every shorter run ends early. \texttt{CAPTURE} copies every accumulator into the output buffer, and \texttt{DONE} holds the result while \texttt{done} is high. A normal run keeps the controller busy for $k_{\mathrm{len}} + 2N$ cycles: 12 for $k_{\mathrm{len}} = N = 4$ and 24 for $k_{\mathrm{len}} = 16$.
+
+An accumulate run goes straight from \texttt{IDLE} or \texttt{DONE} to \texttt{COMPUTE}. The accumulators still hold the previous run's sums, so the new products are added onto them, and the run is busy for $k_{\mathrm{len}} + 2N - 1$ cycles, one fewer than a normal run. In both cases \texttt{cycle\_count} counts every busy cycle and holds the total in \texttt{DONE}.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[>=Stealth, font=\footnotesize,
+  st/.style={draw, rounded corners=2pt, minimum width=15mm, minimum height=6mm, align=center},
+  lab/.style={font=\scriptsize}]
+  \node[st] (idle) {IDLE};
+  \node[st, right=10mm of idle] (clear) {CLEAR};
+  \node[st, right=10mm of clear] (comp) {COMPUTE};
+  \node[st, below=10mm of comp] (cap) {CAPTURE};
+  \node[st, below=10mm of clear] (done) {DONE};
+  \draw[->] (idle) -- node[above, lab] {start} (clear);
+  \draw[->] (clear) -- (comp);
+  \draw[->] (comp) -- node[right, lab] {$\mathrm{step} = T{-}1$} (cap);
+  \draw[->] (cap) -- (done);
+  \draw[->] (done) -- node[left, lab] {start} (clear);
+  \draw[->, dashed] (idle.north) .. controls +(0,9mm) and +(-4mm,9mm) .. node[above, lab, pos=0.45] {start, accumulate} ([xshift=-4mm]comp.north);
+  \draw[->, dashed] (done.east) -- node[below, lab, sloped] {start, acc.} ([yshift=-1mm]comp.south west);
+  \draw[->] ([xshift=4mm]comp.north) .. controls +(1mm,7mm) and +(8mm,4mm) .. node[right, lab] {$\mathrm{step} < T{-}1$} (comp.east);
+\end{tikzpicture}
+\caption{Controller state-transition diagram, with $T = k_{\mathrm{len}} + 2N - 2$. A start with \texttt{accumulate} high (dashed) skips \texttt{CLEAR}. Starts are accepted only with $1 \le k_{\mathrm{len}} \le K_{\max}$. \texttt{busy} is high in \texttt{CLEAR}, \texttt{COMPUTE} and \texttt{CAPTURE}.}
+\label{fig:fsm}
+\end{figure}

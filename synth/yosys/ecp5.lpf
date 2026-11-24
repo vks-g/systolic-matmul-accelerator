@@ -1,0 +1,8 @@
+# Clock constraint for the ECP5 synthesis flow (issue #75).
+#
+# The flow measures resources and Fmax without a board, so only the clock is
+# constrained; there are no pin LOC constraints (run_synth.sh passes
+# --lpf-allow-unconstrained). 100 MHz is the target the tools optimise for;
+# the achieved Fmax is what nextpnr reports after routing, whether or not the
+# target is met, and both numbers land in synth_summary.csv.
+FREQUENCY PORT "clk" 100 MHz;
