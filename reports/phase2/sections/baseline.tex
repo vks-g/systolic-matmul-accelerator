@@ -18,28 +18,6 @@ The testbench drove the baseline through every vector set that the accelerator r
 
 Table~\ref{tab:speedup} compares the two designs on the directed tiled products. In busy cycles the array is 7.5 to 11.0 times faster on the five directed products with more than one element, and the speed-up grows with the inner dimension $K$: the array pays its fill and drain once per chunk, while the baseline pays $N^2$ cycles for every element of $K$. On the smallest product, $1 \times 1 \times 1$, a single multiply-accumulate, the array's fill and drain dominate and the speed-up is only 1.8. Over all 26 products the busy-cycle speed-up ranges from 1.8 to 11.0.
 
-\begin{table}[t]
-\centering
-\caption{Measured cycles of the array and the baseline on the directed tiled products}
-\label{tab:speedup}
-\footnotesize
-\setlength{\tabcolsep}{3.2pt}
-\begin{tabular}{@{}lrrrrrr@{}}
-\toprule
- & \multicolumn{3}{c}{Busy cycles} & \multicolumn{3}{c@{}}{Total cycles} \\
-\cmidrule(lr){2-4}\cmidrule(l){5-7}
-Product & Array & Base. & Speed-up & Array & Base. & Speed-up \\
-\midrule
-$8{\times}8{\times}8$ & 64 & 512 & 8.0 & 260 & 708 & 2.7 \\
-$5{\times}7{\times}6$ & 60 & 448 & 7.5 & 240 & 628 & 2.6 \\
-$4{\times}40{\times}4$ & 62 & 640 & 10.3 & 241 & 819 & 3.4 \\
-$9{\times}33{\times}7$ & 330 & 3168 & 9.6 & 1236 & 4074 & 3.3 \\
-$1{\times}1{\times}1$ & 9 & 16 & 1.8 & 30 & 37 & 1.2 \\
-$4{\times}64{\times}4$ & 93 & 1024 & 11.0 & 369 & 1300 & 3.5 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
 End to end the picture changes. Both designs load the operands and read the result through the same one-element ports, so those cycles are the same for both, and they dominate the array's total. The total speed-up is 1.2 to 3.5 across the 26 products: 2.7 for the $8 \times 8 \times 8$ product, exactly as Section~III-E predicted, against 8.0 for the busy cycles alone. Fig.~\ref{fig:cycles} shows the same effect for square products up to $64 \times 64 \times 64$: for large products the array's busy time is about an order of magnitude below the baseline's, but its total is set by the ports. A faster host interface would raise the end-to-end speed-up towards the busy-cycle one.
 
 \begin{figure}[t]

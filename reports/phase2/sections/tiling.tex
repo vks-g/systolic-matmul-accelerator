@@ -5,7 +5,7 @@
 \subsection{Tiling Products Larger than the Array}
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{tiling.png}
+\includegraphics[width=0.8\columnwidth]{tiling.png}
 \caption{Tiling a product larger than the array. $C$ splits into $N \times N$ output tiles and the inner dimension into chunks of at most $K_{\max}$. Each tile takes one normal run for its first chunk and one accumulate run per later chunk; partial sums stay in the PEs between chunks. Edges are zero-padded and a short last chunk runs with a smaller $k_{\mathrm{len}}$.}
 \label{fig:tiling}
 \end{figure}
