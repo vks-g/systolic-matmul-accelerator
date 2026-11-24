@@ -571,11 +571,11 @@ A host may do better, for example by keeping A when only B changes, or by loadin
 Phase 2 reports resources and maximum frequency from a fully open-source flow (#75). No board is available, so the design is synthesized, placed and routed, but not run on hardware.
 
 - **Device.** Lattice ECP5 LFE5U-25F, speed grade 6, 256-ball caBGA package (`nextpnr-ecp5 --25k --package CABGA256 --speed 6`). It has 24K LUT4s, 28 MULT18X18D multiplier blocks and 56 DP16KD block-RAMs.
-- **Flow.** Yosys `synth_ecp5 -top <module>`, then `nextpnr-ecp5` with a 100 MHz target on `clk` and `--seed 1`, so every number is reproducible. No pins are constrained; nextpnr places the I/O. At N = 4 the top level has 109 pins.
-- **Designs.** `systolic_top` for N = 2, 3 and 4, and `seq_matmul` at N = 4, all with the default `DATA_W`, `ACC_W`, `K_MAX` and `CYC_W`. N = 8 needs 64 multipliers, more than the 28 blocks, so try it with the extra multipliers in LUTs and report it only if it fits.
-- **Metrics.** One row per design in `results/phase2/synth/summary.csv`: LUT4s, flip-flops, MULT18X18D blocks and block RAMs used, from the nextpnr utilization report, and the post-route Fmax of `clk`.
+- **Flow.** Yosys `synth_ecp5 -top <module>`, then `nextpnr-ecp5` with a 100 MHz target on `clk` and `--seed 1`, so every number repeats on the same platform build of the pinned tools (Synthesis CI checks the Linux numbers). No pins are constrained; nextpnr places the I/O. At N = 4 the top level has 109 pins.
+- **Designs.** `systolic_top` for N = 2, 3 and 4, and `seq_matmul` at N = 4, all with the default `DATA_W`, `ACC_W`, `K_MAX` and `CYC_W`. N = 8 needs 64 multipliers, more than the 28 blocks, so `make synth` skips it and reports why.
+- **Metrics.** One row per design in `results/phase2/synth/synth_summary.csv`: LUT4s, flip-flops (`TRELLIS_FF`) and MULT18X18D blocks used, from the nextpnr utilization report, the post-route Fmax of `clk`, the clock constraint and whether it was met. The design uses no block RAMs. `critical_paths.md` lists each design's critical path with its source lines.
 - **Throughput.** Peak multiply-accumulates per second are N²·Fmax for the array and Fmax for the baseline. The effective rate of a run is `N²·k_len / (k_len + 2N)`·Fmax. The results (#71) compare both designs per second and per LUT, not only per cycle.
-- **Critical path.** The skew lanes are combinational, so the longest path probably runs from `step` or `run_k_len` through the lane multiplexer, the multiplier and the adder into the accumulator. Report the path nextpnr prints (#78). Registering the lanes would shorten it at the cost of one more cycle per run; that is out of scope unless the results justify it.
+- **Critical path.** The skew lanes are combinational, so the longest path runs from the skew buffer's step counter through the lane multiplexer, the multiplier and the adder into the accumulator, as nextpnr reports for N = 2, 3 and 4 (#78). At N = 3 it also crosses the B buffer's `k·N` address multiplier. Registering the lanes would shorten it at the cost of one more cycle per run; that is out of scope unless the results justify it.
 
 ## 14. Phase 2 build order
 
