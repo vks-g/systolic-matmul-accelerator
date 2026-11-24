@@ -22,7 +22,8 @@ transitions~\cite{gtkwave2026docs}; saved layouts are in \path{sim/waves/}.
 The \texttt{make waves} target reruns the top-level test and opens its VCD
 in the selected viewer. Waveform inspection supplements the automated
 comparisons. Synthesis, resource counts and maximum-frequency measurement
-are Phase~2 work and are not part of this simulation flow.
+are not part of this simulation flow; \texttt{make synth} runs them
+separately (Section~V).
 
 \subsection{Hierarchical Testbenches}
 The MAC test checks signed products, including $-128\times-128$ and
@@ -95,8 +96,15 @@ Icarus Verilog, Verilator and NumPy, then executes the same
 self-tests, GUI viewer and report build are separate local checks; they
 are not steps in this workflow.
 
-All seven available RTL testbenches pass the current regression,
-including all 106 golden cases end to end. These checks establish the
-observed functional and cycle-level behavior for the exercised cases;
-they are not an exhaustive proof or a measurement of physical timing.
-Phase~2 synthesis will assess implementation resources and timing.
+All eight RTL testbenches pass the current regression: the seven of
+Phase~1 and \texttt{tb\_seq\_matmul}, which drives the sequential baseline
+through the same ports and checks its results and its $N^2 k_{\mathrm{len}}$
+busy cycles (8482 checks). The top-level test \texttt{tb\_systolic\_top} now
+also covers inner lengths other than $N$, accumulate runs and tiled
+products (6078 checks), and \texttt{tb\_sa\_controller} checks the accumulate path
+(242 checks). In total the eight testbenches make 45{,}051 checks, all passing.
+The live demonstration, \texttt{make demo}, multiplies one product on both
+designs and checks both results against NumPy.
+These checks establish the observed functional and cycle-level behavior for the
+exercised cases; they are not an exhaustive proof or a measurement of physical
+timing. Timing is reported by the synthesis tools in Section~V.
