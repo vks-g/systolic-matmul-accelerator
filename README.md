@@ -55,17 +55,23 @@ For an N×N by N×N product, the array takes `3N − 2` compute cycles (10 for 4
 
 ## Architecture diagrams
 
-![System architecture: host write ports, A/B storage and skew, the N×N PE array, output buffer and controller.](docs/architecture/svg/system.svg)
+![System architecture: host write ports with k_len and accumulate, A/B storage and skew, the N×N PE array, output buffer and controller.](docs/architecture/svg/system.svg)
 
-[All four diagrams, editable sources and SVG/PNG exports](docs/architecture/README.md)
-cover the system, PE internals, 4×4 wavefront and controller states, following
+[All six diagrams, editable sources and SVG/PNG exports](docs/architecture/README.md)
+cover the system with `k_len` and `accumulate`, PE internals, the 4×4 wavefront,
+the controller FSM with the accumulate path, tiling of products larger than the
+array, and the sequential baseline, following
 [the architecture contract](docs/spec.md).
 
-The host loads A and B through independent row-major write ports, pulses `start`
+The host loads A and B through independent row-major write ports, sets the
+run's inner length `k_len` (1 to `K_MAX = 16`) and `accumulate`, pulses `start`
 for one cycle, waits for `done`, and reads C through `c_addr` / `c_rdata`. The
-controller sequences `IDLE → CLEAR → COMPUTE → CAPTURE → DONE`. Writes during
+controller sequences `IDLE → CLEAR → COMPUTE → CAPTURE → DONE`, skipping
+`CLEAR` on an accumulate run so the products add onto the previous C; with
+`k_len` chunks and N×N output tiles, matrices of any size can be multiplied
+(see the [tiling diagram](docs/architecture/svg/tiling.svg)). Writes during
 `busy` are ignored, and the previous C stays readable until the next capture.
-Defaults are signed 8-bit operands, 32-bit accumulators, and `K = N = 4`; all
+Defaults are signed 8-bit operands, 32-bit accumulators, and `N = 4`; all
 registers use `clk` and synchronous active-low `rst_n`.
 
 ## Status

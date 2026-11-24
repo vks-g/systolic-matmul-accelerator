@@ -1,0 +1,33 @@
+---
+config:
+  flowchart:
+    nodeSpacing: 20
+    rankSpacing: 28
+    padding: 10
+    wrappingWidth: 280
+---
+flowchart TB
+  accTitle: Tiling an 8 by 20 times 20 by 8 product on a 4 by 4 array
+  accDescr: The output C is four 4 by 4 tiles. Each output tile uses the matching four A rows and four B columns. For each tile, run once with k 0 through 15 and accumulate low, then run with k 16 through 19, k_len 4, and accumulate high. The first run clears the partial sum; the second adds to it.
+
+  product["A: 8 × 20  ·  B: 20 × 8<br/>N = 4  ·  K_MAX = 16"]
+  split["K chunks: k 0–15 (k_len 16), then k 16–19 (k_len 4)<br/>A splits by row blocks, B by column blocks"]
+  product --> split
+
+  subgraph outputs["C: 8 × 8 = four 4 × 4 output tiles"]
+    direction TB
+    c00["Tile (0,0)<br/>A rows 0–3 · B cols 0–3"]
+    c01["Tile (0,1)<br/>A rows 0–3 · B cols 4–7"]
+    c10["Tile (1,0)<br/>A rows 4–7 · B cols 0–3"]
+    c11["Tile (1,1)<br/>A rows 4–7 · B cols 4–7"]
+    c00 ~~~ c10
+    c01 ~~~ c11
+  end
+  split --> outputs
+  note["Per tile: run 1, k 0–15, accumulate low (clears C)<br/>run 2, k 16–19, accumulate high (adds to C)<br/>Then read the 4 × 4 tile. Zero-pad edges past M or P."]
+  outputs -.-> note
+
+  classDef tile fill:#dce9f7,stroke:#2c5d8f,color:#13263d
+  classDef note fill:#f3f5f8,stroke:#60758b,color:#13263d
+  class c00,c01,c10,c11 tile
+  class note note

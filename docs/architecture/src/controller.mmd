@@ -1,34 +1,40 @@
 stateDiagram-v2
-  accTitle: Controller state transitions and cycle accounting
-  accDescr: Synchronous active-low reset takes any state to IDLE. Start is accepted only in IDLE or DONE. CLEAR and CAPTURE each last one cycle. COMPUTE runs steps zero through T minus one. DONE persists until another start. Busy cycles increment cycle_count to T plus two.
-  direction LR
+  accTitle: Controller state transitions with the accumulate path and cycle accounting
+  accDescr: Synchronous active-low reset takes any state to IDLE. Start is accepted only in IDLE or DONE, with k_len and accumulate sampled at the same edge. A normal start goes to CLEAR; an accumulate start goes straight to COMPUTE, keeping the previous accumulators. CLEAR and CAPTURE each last one cycle. COMPUTE runs steps zero through T minus one, with T equal to k_len plus 2N minus 2. DONE persists until another start.
 
   state "IDLE<br/>busy = 0; done = 0<br/>hold while !start" as IDLE
   state "CLEAR<br/>busy = 1; clear = 1<br/>1 cycle" as CLEAR
   state "COMPUTE<br/>busy = 1; en = 1<br/>step = 0 … T − 1" as COMPUTE
   state "CAPTURE<br/>busy = 1; capture = 1<br/>1 cycle" as CAPTURE
-  state "DONE<br/>busy = 0; done = 1<br/>hold while !start<br/>cycle_count = T + 2" as DONE
+  state "DONE<br/>busy = 0; done = 1<br/>hold while !start<br/>cycle_count = T + 2 (T + 1 if accumulate)" as DONE
 
   [*] --> IDLE: synchronous reset
   IDLE --> IDLE
-  IDLE --> CLEAR: start
+  IDLE --> CLEAR: start & !accumulate
+  IDLE --> COMPUTE: start & accumulate
   CLEAR --> COMPUTE
   COMPUTE --> COMPUTE: step != T − 1
   COMPUTE --> CAPTURE: step == T − 1
   CAPTURE --> DONE
   DONE --> DONE
-  DONE --> CLEAR: start
+  DONE --> CLEAR: start & !accumulate
+  DONE --> COMPUTE: start & accumulate
 
   note left of IDLE
     Any state + !rst_n at rising clk:
     IDLE; step = 0; cycle_count = 0
     Unlisted control outputs = 0
+    start with k_len = 0 or k_len > K_MAX
+    is ignored; busy stays low
   end note
   note left of COMPUTE
-    T = K + 2N − 2 = 10 (N = K = 4)
+    T = k_len + 2N − 2 (22 for k_len = K_MAX = 16, N = 4)
+    k_len, accumulate sampled with start;
+    run_k_len held for the run
     start ignored while busy
     step increments on self-loop; 0 elsewhere
     Accepted start zeroes cycle_count
     Each busy edge increments cycle_count
-    cycle_count holds 12 in DONE
+    cycle_count holds T + 2 in DONE,
+    or T + 1 after an accumulate run
   end note
