@@ -225,6 +225,11 @@ LFE5U-25F, then writes logs, `synth_summary.csv` and `critical_paths.md` to
 `results/phase2/synth/`. See [`synth/README.md`](../synth/README.md) for the
 constraint, device variant and skip behaviour.
 
+`make synth` overwrites the committed files in `results/phase2/synth/`. On macOS
+the N = 4 Fmax can differ slightly from the committed Linux result (see
+[`synth/README.md`](../synth/README.md)); undo the run with
+`git checkout -- results/phase2/synth` and don't commit the difference.
+
 ## CI
 
 [`.github/workflows/sim.yml`](../.github/workflows/sim.yml) runs on every PR
@@ -239,17 +244,23 @@ or build the report.
 `make synth` sweep on PRs and pushes to `dev`: it downloads the OSS CAD
 Suite, synthesizes every configuration and prints the summary CSV.
 
-## Build the Phase 1 report
+## Build the reports
+
+The final report (Phase 2) and the submitted Phase 1 report build the same
+way, from the repository root:
 
 ```sh
-cd reports/phase1
-tectonic main.tex
+tectonic reports/phase2/main.tex     # final report -> reports/phase2/main.pdf
+tectonic reports/phase1/main.tex     # Phase 1 report -> reports/phase1/main.pdf
 ```
 
-The first build needs internet access to download TeX resources. Follow the
-[report instructions](../reports/phase1/README.md) when changing report
-sections or committing the PDF. Report output is separate from simulation
-build output, and `make clean` does not remove it.
+The first build needs internet access to download TeX resources. The Phase 2
+report reads its figures from `results/` and `docs/architecture/png/`, so build
+it inside a full checkout. Follow the report instructions
+([Phase 2](../reports/phase2/README.md), [Phase 1](../reports/phase1/README.md))
+when changing report sections or committing the PDF; only the lead commits
+`main.pdf`. Report output is separate from simulation build output, and
+`make clean` does not remove it.
 
 ## Common problems
 

@@ -32,8 +32,14 @@ make synth SYNTH_N="2 4"  # choose the array sizes
 Logs, the timing reports, `synth_summary.csv` and `critical_paths.md` land in
 `results/phase2/synth/` and are committed as evidence; intermediate netlists
 go to `build/synth/` (gitignored). The committed results were generated with
-OSS CAD Suite release `2026-11-22`, Yosys `0.71+77` and nextpnr-ecp5 `0.10`.
-The workflow pins that release. Results are deterministic for this toolchain
-because placement uses a fixed seed.
+OSS CAD Suite release `2026-11-22` (`linux-x64`), Yosys `0.71+77` and
+nextpnr-ecp5 `0.11.1-121`. The workflow pins that release and fails if the
+regenerated `synth_summary.csv` differs from the committed one.
+
+Placement uses a fixed seed, so results repeat exactly on the same platform
+build. Other platform builds of the same release can place differently: on
+macOS (`darwin-arm64`) every resource count and the N = 2, 3 and baseline Fmax
+match, but N = 4 reaches 56.11 MHz instead of 56.83 MHz. The committed numbers
+are the Linux ones; don't commit results regenerated on another platform.
 
 Nothing here is required for Phase 1.
