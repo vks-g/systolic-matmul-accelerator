@@ -103,6 +103,8 @@ busy cycles (8482 checks). The top-level test \texttt{tb\_systolic\_top} now
 also covers inner lengths other than $N$, accumulate runs and tiled
 products (6078 checks), and \texttt{tb\_sa\_controller} checks the accumulate path
 (242 checks). In total the eight testbenches make 45{,}051 checks, all passing.
+The live demonstration, \texttt{make demo}, multiplies one product on both
+designs and checks both results against NumPy.
 These checks establish the observed functional and cycle-level behavior for the
 exercised cases; they are not an exhaustive proof or a measurement of physical
 timing. Timing is reported by the synthesis tools in Section~V.
