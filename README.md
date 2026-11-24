@@ -2,34 +2,51 @@
 
 # systolic-matmul-accelerator
 
-**A 4×4 output-stationary systolic array for fixed-point matrix multiplication, in Verilog**
+**A parameterized output-stationary systolic array for fixed-point matrix multiplication, in Verilog**
 
 Modern Computer Architecture, Project 12: Systolic Array Matrix Multiplication Accelerator.
 
-[![Phase 1: simulation verified](https://img.shields.io/badge/Phase_1-simulation_verified-1baf7a)](#results)
+[![Phase 2: measured and synthesized](https://img.shields.io/badge/Phase_2-measured_and_synthesized-1baf7a)](#results)
 [![Verilog-2005](https://img.shields.io/badge/RTL-Verilog--2005-2a78d6)](rtl/)
 [![Simulator: Icarus Verilog](https://img.shields.io/badge/sim-Icarus_Verilog-1baf7a)](docs/setup.md)
 [![Lint: Verilator](https://img.shields.io/badge/lint-Verilator-5319e7)](docs/setup.md)
 [![Simulation CI](https://github.com/vks-g/systolic-matmul-accelerator/actions/workflows/sim.yml/badge.svg?branch=dev)](https://github.com/vks-g/systolic-matmul-accelerator/actions/workflows/sim.yml)
+[![Synthesis CI](https://github.com/vks-g/systolic-matmul-accelerator/actions/workflows/synth.yml/badge.svg?branch=dev)](https://github.com/vks-g/systolic-matmul-accelerator/actions/workflows/synth.yml)
 
 <table>
   <tr>
-    <td align="center" width="50%">
+    <td align="center" width="34%">
+      <b><a href="reports/phase2/">Final IEEE report (Phase 2)</a></b>
+      <br>Results, synthesis and the measured baseline comparison
+      <br><a href="reports/phase2/">LaTeX source and build notes</a>
+    </td>
+    <td align="center" width="33%">
       <a href="https://drive.google.com/drive/folders/1d-p1YpFjd7gjbm1XGEC8u5PCso8LQxUw?usp=sharing"><img src="media/phase1/video_thumbnail.jpg" alt="Watch the Phase 1 prototype video (4:42)"></a>
       <br><b><a href="https://drive.google.com/drive/folders/1d-p1YpFjd7gjbm1XGEC8u5PCso8LQxUw?usp=sharing">▶ Watch the prototype video</a></b>
       <br>4:42 · all five members present their work
     </td>
-    <td align="center" width="50%">
+    <td align="center" width="33%">
       <a href="reports/phase1/main.pdf"><img src="media/phase1/report_thumbnail.jpg" alt="Read the Phase 1 IEEE report (PDF)"></a>
-      <br><b><a href="reports/phase1/main.pdf">Read the IEEE report (PDF)</a></b>
+      <br><b><a href="reports/phase1/main.pdf">Read the Phase 1 report (PDF)</a></b>
       <br>7 pages · <a href="reports/phase1/">LaTeX source</a>
     </td>
   </tr>
 </table>
 
-[Setup guide](docs/setup.md) · [Architecture spec](docs/spec.md) · [Results](#results) · [Team](#team) · [Contributing](CONTRIBUTING.md)
+[Setup guide](docs/setup.md) · [Architecture spec](docs/spec.md) · [Live demo](#live-demo-make-demo) · [Results](#results) · [Synthesis](#synthesis) · [Team](#team) · [Contributing](CONTRIBUTING.md)
 
 </div>
+
+## Phase 2 deliverables
+
+| Required | Where it is |
+|---|---|
+| Final IEEE report: results and discussion, conclusion | [`reports/phase2/`](reports/phase2/) (assembled in #63) |
+| Inner lengths other than N, and products larger than the array | Run-time `k_len` and `accumulate` in [`rtl/control/`](rtl/control/) and [`rtl/buffers/`](rtl/buffers/); tiling procedure in [spec section 12](docs/spec.md) |
+| Measured sequential baseline | [`rtl/baseline/seq_matmul.v`](rtl/baseline/seq_matmul.v), same host ports as the array; [comparison](#measured-speed-up-against-the-sequential-baseline) |
+| Synthesis: resources and maximum frequency | [`synth/`](synth/README.md), results in [`results/phase2/synth/`](results/phase2/synth/) |
+| Live demonstration | [`make demo`](#live-demo-make-demo) |
+| Evidence | [cycle counts, speed-ups and plots](results/phase2/), [waveform captures](results/phase2/waveforms/captions.md), [architecture diagrams](docs/architecture/README.md) |
 
 ## Phase 1 deliverables
 
@@ -51,7 +68,7 @@ This project builds a parameterized N×N array (default 4×4) with an **output-s
 - columns of **B** enter from the top and move down, skewed so column `j` starts `j` cycles late;
 - PE `(i, j)` keeps `C[i][j]` in its accumulator and adds `A[i][k] · B[k][j]` when the two operands meet.
 
-For an N×N by N×N product, the array takes `3N − 2` compute cycles (10 for 4×4), plus one cycle to clear and one to capture the result: **12 busy cycles**. A single sequential MAC would need N³ = 64 compute cycles for the same product; that baseline is analytical. See [Results](#results) for the measured checks and the throughput calculation.
+One run multiplies an N×`k_len` block of A by a `k_len`×N block of B, with `k_len` from 1 to `K_MAX = 16`. It takes `k_len + 2N − 2` compute cycles, plus one to clear and one to capture: **12 busy cycles** for `k_len = 4` and 24 for `k_len = 16`. The sequential single-MAC baseline, built in RTL with the same ports, needs `N² · k_len`: 64 and 256. An accumulate run skips the clear and adds onto the previous C, so a host can multiply matrices of any size tile by tile. See [Results](#results).
 
 ## Architecture diagrams
 
@@ -76,17 +93,21 @@ registers use `clk` and synchronous active-low `rst_n`.
 
 ## Status
 
-| Component | Path | Issue | Status |
+| Component | Path | Issues | Status |
 |---|---|---|---|
-| Architecture spec and interface contract | `docs/spec.md` | #2 | Implemented |
+| Architecture spec and interface contract (v2: `k_len`, accumulate, tiling) | `docs/spec.md` | #2, #60 | Done |
 | MAC unit and processing element | `rtl/pe/` | #6 | Implemented, self-checked |
-| N×N array grid | `rtl/array/` | #3 | Implemented, N=4 and N=3 tested |
-| Input skew buffers and output readout | `rtl/buffers/` | #10 | Implemented, self-checked |
-| Controller FSM | `rtl/control/` | #7 | Implemented, self-checked |
-| Top level and matrix data interface | `rtl/top/` | #4 | Integrated, self-checked |
-| Python golden model and test vectors | `model/` | #14 | Implemented, model self-tests |
-| End-to-end self-checking testbench | `tb/tb_systolic_top.v` | #11 | 106 golden cases pass |
-| Synthesis, Fmax, resources, sequential RTL baseline | `synth/` | Phase 2 | Planned |
+| N×N array grid, K ≠ N and accumulation across runs | `rtl/array/` | #3, #61 | N=4 and N=3 tested |
+| Input skew buffers and output readout for K ≠ N | `rtl/buffers/` | #10, #68 | Implemented, self-checked |
+| Controller FSM with run-time `k_len` and accumulate | `rtl/control/` | #7, #65 | Implemented, self-checked |
+| Top level: K ≠ N and tiled products through the host ports | `rtl/top/` | #4, #62 | 106 + 112 cases and 26 tiled products pass |
+| Sequential single-MAC baseline, same host interface | `rtl/baseline/` | #64 | Implemented, self-checked |
+| Golden model and vectors for K ≠ N and tiling | `model/` | #14, #72 | 52 model self-tests pass |
+| Performance model and plots | `model/perf_model.py`, `results/phase2/figures/` | #73 | Done |
+| End-to-end tests for K ≠ N and tiled products | `tb/tb_systolic_top.v` | #11, #69 | 6,078 checks pass |
+| Synthesis: resources and Fmax on ECP5 | `synth/` | #75 | N = 2, 3, 4 and the baseline; N = 8 does not fit |
+| Live demonstration | `model/demo.py` | #70 | `make demo` |
+| Final report | `reports/phase2/` | #63 | Being assembled |
 
 ## Quick start
 
@@ -104,104 +125,186 @@ make lint
 make test
 ```
 
-Run from the repository root with `.venv` active. `make lint` checks all seven
-RTL modules using Verilator `--lint-only -Wall`. `make test` generates 106 golden
-cases (6 directed + 100 random, seed 1), compiles Verilog-2005 with Icarus, and
-runs all seven self-checking testbenches. A mismatch, missing `PASS` summary,
-compile error or nonzero simulator exit fails the command. The expected totals
-are listed under [Results](#results).
+Run from the repository root with `.venv` active. `make lint` checks all eight
+RTL modules using Verilator `--lint-only -Wall`. `make test` generates the golden
+vectors (106 N×N cases, 112 K ≠ N cases and 26 tiled products, fixed seeds),
+compiles Verilog-2005 with Icarus, and runs all eight self-checking testbenches.
+A mismatch, missing `PASS` summary, compile error or nonzero simulator exit fails
+the command. The expected totals are listed under [Results](#results).
 
-Open the generated top-level waveform with an installed viewer:
+### Live demo: `make demo`
 
 ```sh
-make waves
+make demo                          # random 8×20×8 product, seed 1
+make demo M=9 K=33 P=7 SEED=4      # any size
+make demo A=my_a.txt B=my_b.txt    # your own matrices, one row per line
+make demo WAVES=1                  # also open the last tile's waveform
 ```
 
-Make chooses GTKWave if it is on `PATH`, otherwise Surfer. To choose Surfer
-explicitly, or open the PE waveform instead:
+The demo multiplies one M×K by K×P product on `systolic_top`, tiled into N×N
+output tiles and chunks of at most `K_MAX` with accumulate runs, and on
+`seq_matmul`, through the same host ports. It prints A, B and C, checks both
+results against NumPy, and prints both cycle counts. The default run ends with:
+
+```
+NumPy check (A @ B):
+  systolic_top  matches
+  seq_matmul    matches
+
+Cycles               busy     total (load + start + busy + readout)
+  systolic_top        140       532
+  seq_matmul         1280      1672
+  speed-up          9.14x     3.14x
+
+PASS demo: 8x20x8 correct on both designs, busy-cycle speed-up 9.14x, end to end 3.14x
+```
+
+Matrix files hold integers from −128 to 127, separated by spaces or commas.
+
+### Synthesis: `make synth`
+
+`make synth` needs Yosys and nextpnr-ecp5 from the OSS CAD Suite; the
+[setup guide](docs/setup.md#synthesis-phase-2) installs them on macOS, Linux and
+WSL2.
 
 ```sh
-make waves VIEWER=surfer
+make synth                 # systolic_top at N = 2, 3, 4, 8 and seq_matmul at N = 4
+make synth SYNTH_N="2 4"   # choose the array sizes
+```
+
+It writes the logs, timing reports, `synth_summary.csv` and `critical_paths.md`
+to [`results/phase2/synth/`](results/phase2/synth/). Placement uses a fixed seed,
+so the numbers are reproducible; the [Synthesis CI](.github/workflows/synth.yml)
+reruns the sweep and fails if the committed summary changes. See
+[`synth/README.md`](synth/README.md) for the flow.
+
+### Waveforms and Python checks
+
+```sh
+make waves                                    # top-level VCD in GTKWave, else Surfer
 make waves WAVE_MODULE=pe VIEWER=surfer
+python -m unittest discover -s model -v       # 52 golden/performance-model self-tests
+python -m unittest discover -s tests -v       # 6 Make/viewer-selection tests
 ```
 
-For the top-level view, add `clk`, `start`, `busy`, `done` and `cycle_count` from the
-testbench scope and zoom to a transaction. Generated VCDs and logs are in
-`build/`; the annotated [report waveform layouts](sim/waves/) are optional.
-The [setup guide](docs/setup.md#common-problems) covers missing tools and viewers.
-
-The Python checks can also be run separately:
-
-```sh
-python -m unittest discover -s model -v
-python -m unittest discover -s tests -v
-```
-
-These run 17 golden-model self-tests and 6 Make/viewer-selection tests.
+Generated VCDs and logs are in `build/`; the annotated
+[report waveform layouts](sim/waves/) are optional. The
+[setup guide](docs/setup.md#common-problems) covers missing tools and viewers.
 [`CI`](.github/workflows/sim.yml) runs `make lint test` and the viewer-selection
 checks on pull requests and pushes to `dev`.
 
 ## Results
 
-Golden-vector defaults: `N = K = 4`, `DATA_W = 8`, `ACC_W = 32`, seed 1.
-All seven RTL modules pass lint. `make test` passes **10,349 / 10,349 checks**:
+All eight RTL modules pass lint. `make test` passes **45,051 / 45,051 checks**:
 
 | Testbench | Checks passed | Coverage |
 |---|---:|---|
 | `tb_mac` | 20 / 20 | Signed products, accumulation, clear/reset and enable |
 | `tb_pe` | 15 / 15 | MAC plus registered operand forwarding and stalls |
-| `tb_sa_controller` | 56 / 56 | States, handshake and cycle count |
-| `tb_input_skew_buffer` | 496 / 496 | Row/column skew, padding and stored operands |
+| `tb_sa_controller` | 242 / 242 | Every cycle of a run for N = 4 and N = 3, run-time `k_len`, the accumulate path |
+| `tb_input_skew_buffer` | 2,608 / 2,608 | Row/column skew for every `k_len`, padding and stored operands |
 | `tb_output_buffer` | 96 / 96 | Capture, row-major readout and holding results |
-| `tb_systolic_array` | 7,471 / 7,471 | N=4 and N=3 arrays, directed/random products, stalls and restart |
-| `tb_systolic_top` | 2,195 / 2,195 | All 106 golden products plus host-interface checks |
+| `tb_systolic_array` | 27,510 / 27,510 | N=4 and N=3 arrays, K ≠ N, accumulation across runs, stalls and restart |
+| `tb_systolic_top` | 6,078 / 6,078 | 106 N×N and 112 K ≠ N golden cases, 26 tiled products, host-interface checks |
+| `tb_seq_matmul` | 8,482 / 8,482 | The baseline on the same vectors, through the same ports, and its `N² · k_len` busy cycles |
 
-The top-level test compares every element of C with the Python golden result.
-It also checks ignored writes during a run, back-to-back runs, replacing one
-matrix, retaining the previous result until capture, and reset during a run.
-See the [committed simulation logs](results/phase1/logs/) and
-[verification methodology](reports/phase1/sections/verification.tex).
+Every expected C comes from the Python golden model, never from RTL output.
+Cycle counts are recorded in [`results/phase2/cycle_counts.csv`](results/phase2/cycle_counts.csv)
+(array, K ≠ N), [`baseline_cycles.csv`](results/phase2/baseline_cycles.csv),
+[`tiled_cycles.csv`](results/phase2/tiled_cycles.csv) and
+[`speedup.csv`](results/phase2/speedup.csv).
 
-### Measured timing and MAC throughput
+### K ≠ N: run-time inner length
 
-All 106 golden runs record **10 compute cycles and 12 busy cycles**, with
-`cycle_count = 12` when `done` rises, in
-[`cycle_counts.csv`](results/phase1/cycle_counts.csv). The busy interval consists
-of one CLEAR, ten COMPUTE steps and one CAPTURE; loading operands and reading
-results through the host ports are outside that interval.
+All 112 K ≠ N cases (`k_len` 1 to 16) finish in exactly `k_len + 2N` busy cycles,
+with `k_len + 2N − 2` compute steps. An accumulate run skips the clear and takes
+one cycle fewer. Each PE is busy for `k_len` of the compute steps, so utilization
+rises from 40 % at `k_len = 4` to 72.7 % at `k_len = 16`.
 
-| Metric | Default 4×4 product | Basis |
-|---|---:|---|
-| Useful multiply-accumulates per product | 64 | N³ operations |
-| Compute cycles | 10 | Measured, matches `K + 2N − 2` |
-| Busy cycles, accepted start to done | 12 | Measured, includes clear and capture |
-| Average useful MACs per compute cycle | 6.4 | 64 / 10 |
-| Average useful MACs per busy cycle | 5.33 | 64 / 12 |
-| PE hardware capacity | 16 MAC units | N² PEs, one MAC per PE per enabled cycle |
-| Sequential single-MAC compute cycles | 64 | Analytical reference |
+![PE utilization against the inner dimension K, for K_MAX = 16.](results/phase2/figures/utilization_vs_k.png)
 
-The array uses 6.4 times fewer compute cycles than the analytical single-MAC
-reference (about 5.33 times fewer when including clear/capture). This is a
-cycle-count comparison: synthesis, clock frequency, area, power and a measured
-sequential RTL baseline are Phase 2 work. The 16-PE capacity is distinct from
-the useful-MAC average because the wavefront fills and drains the grid.
+### Measured speed-up against the sequential baseline
+
+Both designs run the same 26 tiled products (6 directed, 20 random) through the
+same host ports. **Busy** counts the cycles from each accepted `start` to `done`;
+**total** adds loading the operands, the start pulses and reading C.
+
+| Product (M×K×P) | Array busy | Baseline busy | Speed-up | Array total | Baseline total | Speed-up |
+|---|---:|---:|---:|---:|---:|---:|
+| 8×8×8 | 64 | 512 | 8.0 | 260 | 708 | 2.7 |
+| 5×7×6 | 60 | 448 | 7.5 | 240 | 628 | 2.6 |
+| 4×40×4 | 62 | 640 | 10.3 | 241 | 819 | 3.4 |
+| 9×33×7 | 330 | 3,168 | 9.6 | 1,236 | 4,074 | 3.3 |
+| 1×1×1 | 9 | 16 | 1.8 | 30 | 37 | 1.2 |
+| 4×64×4 | 93 | 1,024 | 11.0 | 369 | 1,300 | 3.5 |
+
+Over all 26 products the busy-cycle speed-up ranges from **1.8 to 11.0** and the
+end-to-end speed-up from **1.2 to 3.5**. The busy speed-up grows with K, because
+the array pays its fill and drain once per chunk while the baseline pays N²
+cycles for every element of K. End to end, the one-element-per-cycle host ports
+limit throughput: loading a run's operands takes `N · k_len` cycles, more than
+the run itself.
+
+The [performance model](model/perf_model.py) extends these measurements to
+other sizes (its single-run point matches the measured 12 cycles):
+
+| Busy-cycle speed-up for one N×N tile | Cycles per S×S product, N = 4 |
+|---|---|
+| ![Busy-cycle speed-up over the baseline for one N by N tile against the array size N, for K = 4, 8 and 16, with the N squared peak.](results/phase2/figures/speedup_vs_n.png) | ![Busy and end-to-end cycles of the array and the baseline against the matrix size S, log scale.](results/phase2/figures/cycles_vs_size.png) |
+
+The [Phase 2 waveform captures](results/phase2/waveforms/captions.md) show a
+`k_len = 5` run, an accumulate chain, and the baseline computing one element at a time.
+
+### Synthesis
+
+Lattice ECP5 LFE5U-25F (28 `MULT18X18D`), Yosys `synth_ecp5` and nextpnr-ecp5,
+100 MHz clock constraint, fixed seed. From
+[`synth_summary.csv`](results/phase2/synth/synth_summary.csv):
+
+| Design | N | LUT4 | FF | MULT18X18D | Fmax (MHz) |
+|---|---:|---:|---:|---:|---:|
+| `systolic_top` | 2 | 1,243 | 847 | 4 | 60.40 |
+| `systolic_top` | 3 | 2,495 | 1,487 | 11 | 38.06 |
+| `systolic_top` | 4 | 2,506 | 2,287 | 16 | 56.83 |
+| `seq_matmul` (baseline) | 4 | 3,735 | 1,617 | 1 | 52.16 |
+
+- At N = 4 the array uses 1.4 times the flip-flops of the baseline and 33 % fewer
+  LUTs, and runs 9 % faster (56.83 against 52.16 MHz). No configuration meets
+  100 MHz.
+- **N = 8 does not fit:** it needs 64 multipliers and the device has 28.
+- **N = 3 is the slowest.** Two of its 11 multipliers are in the B skew buffer,
+  whose read address `k·N + l` is a real multiplication when N is not a power of
+  two. Its critical path runs through that multiplier and then the PE
+  multiplier. Keeping N a power of two keeps the buffer addressing free.
+- In every array size the slowest path runs from a skew-buffer counter through
+  a PE's multiply-accumulate. The paths with their source lines are in
+  [`critical_paths.md`](results/phase2/synth/critical_paths.md).
+
+### Phase 1 results
+
+Phase 1 fixed `k_len = N = 4`: 10,349 checks across seven testbenches, and all 106
+golden runs recorded 10 compute and 12 busy cycles
+([`cycle_counts.csv`](results/phase1/cycle_counts.csv),
+[logs](results/phase1/logs/)). The single-MAC reference was then analytical; Phase 2
+measures it in RTL (64 busy cycles at `k_len = 4`, a 5.3× speed-up).
 
 ![Annotated top-level waveform: start is accepted, busy covers CLEAR and ten COMPUTE steps plus CAPTURE, done rises with cycle_count 12, then results are read.](results/phase1/waveforms/systolic_top.png)
 
 Known golden case 5: **A** marks the accepted start, **B** entry to CAPTURE
 after ten compute steps, **C** completion with `cycle_count = 12`, and **D** readout of
 `C[1][2] = 278` at address 6. The [capture captions](results/phase1/waveforms/captions.md)
-explain this and the PE/array captures. Full results and limitations are in the
-[Phase 1 report](reports/phase1/main.pdf); the
-[4:42 prototype video](https://drive.google.com/drive/folders/1d-p1YpFjd7gjbm1XGEC8u5PCso8LQxUw?usp=sharing)
-shows all five members and the working simulation. See the
-[video notes and script](media/phase1/README.md).
+explain this and the PE/array captures. See the [Phase 1 report](reports/phase1/main.pdf)
+and the [video notes and script](media/phase1/README.md).
 
-## Next: Phase 2
+## Limitations
 
-- Synthesize the design to measure its resource use and maximum clock frequency.
-- Build the sequential single-MAC baseline in RTL, so the speed-up is measured rather than derived.
-- Add tiling, so the array can multiply matrices larger than itself.
+- The host writes and reads one element per cycle, so operand loading, not the
+  array, limits end-to-end throughput.
+- The wavefront's `2N − 2` fill and drain cycles are paid on every run, so a PE
+  is busy for at most 72.7 % of the compute steps at `K_MAX = 16`.
+- Results stay at 32 bits, with no rounding or saturation.
+- The critical path through the skew buffer and the combinational MAC limits the
+  clock; registering the buffer outputs would cut it at the cost of one cycle per run.
 
 ## Repository structure
 
@@ -212,25 +315,28 @@ shows all five members and the working simulation. See the
 │   ├── array/           N×N grid of PEs
 │   ├── buffers/         input skew buffers, output/accumulator readout
 │   ├── control/         controller FSM
-│   └── top/             top level with the matrix data interface
+│   ├── top/             top level with the matrix data interface
+│   └── baseline/        sequential single-MAC baseline (seq_matmul)
 ├── tb/                  self-checking testbenches, tb_<module>.v
-├── model/               Python golden reference and test-vector generator
+├── model/               golden model, vector generator, performance model, demo
 ├── sim/waves/           GTKWave layouts (.gtkw)
-├── synth/               Phase 2: synthesis scripts and constraints
+├── synth/               ECP5 synthesis flow (Yosys, nextpnr-ecp5)
 ├── docs/                interface/timing spec, setup guide, architecture diagrams
-├── results/phase1/      waveform captures, simulation logs, cycle counts
-├── reports/phase1/      IEEE LaTeX report: main.tex, sections/, refs.bib, main.pdf
+├── results/phase1/      Phase 1 waveform captures, simulation logs, cycle counts
+├── results/phase2/      cycle counts, speed-ups, plots, waveforms, synthesis results
+├── reports/phase1/      Phase 1 IEEE report: main.tex, sections/, refs.bib, main.pdf
+├── reports/phase2/      final IEEE report
 └── media/phase1/        video script; the video itself is linked, not committed
 ```
 
 ## Team
 
-| Name | GitHub | Phase 1 work |
-|---|---|---|
-| Gokul VKS (lead) | [@vks-g](https://github.com/vks-g) | Architecture spec and interface contract, array grid, top level, report assembly, video edit |
-| Milind Bansal | [@MilindDevX](https://github.com/MilindDevX) | MAC unit and processing element, controller, waveform captures, PE and controller report sections |
-| Isha Tomar | [@Bytebard089](https://github.com/Bytebard089) | Input skew and output buffers, end-to-end testbench, video script, dataflow and status report sections |
-| Yashi Agrawal | [@11yashiagrawal](https://github.com/11yashiagrawal) | Python golden model and test-vector generator, literature review and references |
-| Mohammad Affan Anas | [@affan80](https://github.com/affan80) | Setup guide, Makefile and CI, architecture diagrams, README, verification report section, clean-clone check |
+| Name | GitHub | Phase 1 work | Phase 2 work |
+|---|---|---|---|
+| Gokul VKS (lead) | [@vks-g](https://github.com/vks-g) | Architecture spec and interface contract, array grid, top level, report assembly, video edit | Spec v2, array and top level for K ≠ N and tiling, final report assembly |
+| Milind Bansal | [@MilindDevX](https://github.com/MilindDevX) | MAC unit and processing element, controller, waveform captures, PE and controller report sections | Sequential baseline, controller `k_len` and accumulate, Phase 2 waveforms, baseline report section |
+| Isha Tomar | [@Bytebard089](https://github.com/Bytebard089) | Input skew and output buffers, end-to-end testbench, video script, dataflow and status report sections | Buffers for K ≠ N, end-to-end K ≠ N and tiling tests, `make demo`, results report section |
+| Yashi Agrawal | [@11yashiagrawal](https://github.com/11yashiagrawal) | Python golden model and test-vector generator, literature review and references | Golden model for K ≠ N and tiling, performance model and plots, literature review |
+| Mohammad Affan Anas | [@affan80](https://github.com/affan80) | Setup guide, Makefile and CI, architecture diagrams, README, verification report section, clean-clone check | Synthesis flow, Phase 2 diagrams, README, synthesis and verification report sections, clean-clone check |
 
-Each piece of work was tracked in a GitHub issue and merged into `dev` through a pull request, so the commit history shows who wrote what. The report's Individual Contributions section (Section VII) has the full list.
+Each piece of work was tracked in a GitHub issue and merged into `dev` through a pull request, so the commit history shows who wrote what. The report's Individual Contributions section has the full list.
