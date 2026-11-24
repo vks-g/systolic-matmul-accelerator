@@ -1,0 +1,5 @@
+design,N,LUT4,TRELLIS_FF,MULT18X18D,fmax_mhz,clock_constraint_mhz,timing_met
+systolic_top,2,1243,847,4,60.40,100,no
+systolic_top,3,2495,1487,11,38.06,100,no
+systolic_top,4,2506,2287,16,56.83,100,no
+seq_matmul,4,3735,1617,1,52.16,100,no

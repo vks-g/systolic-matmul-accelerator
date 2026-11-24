@@ -12,4 +12,6 @@ The PE also registers its operands. The left operand $a$ is copied to the right 
 \label{fig:pe-wave}
 \end{figure*}
 
-The accumulator width follows from the largest possible sum. For $K = N = 4$ the largest magnitude is $K \cdot 2^{2\cdot\mathrm{DATA\_W}-2} = 4 \cdot 2^{14} = 65{,}536$, reached when every operand is $-128$. That needs 18 bits, so a 32-bit accumulator cannot overflow for any $K$ below 131{,}072. The datapath therefore does not saturate. Rounding and saturating back to 8 bits are left for Phase 2.
+The PE needed no change for Phase 2. A run with a shorter $k_{\mathrm{len}}$ simply enables it for fewer steps, and an accumulate run skips the clear, so the MAC keeps adding onto the sum of the previous run. A tiled product with inner dimension $K$ therefore builds each element of a tile in one accumulator, across all of its chunks.
+
+The accumulator width follows from the largest possible sum. Over an inner dimension $K$, the largest magnitude is $K \cdot 2^{2\cdot\mathrm{DATA\_W}-2} = K \cdot 2^{14}$, reached when every operand is $-128$: 65{,}536 for $K = 4$, which needs 18 bits. A 32-bit accumulator holds this for any $K$ up to 131{,}071, however many chunks the product is split into, so the datapath does not saturate. Rounding and saturating the results back to 8 bits are out of scope.

@@ -4,6 +4,8 @@ PYTHON ?= python3
 IVERILOG ?= iverilog
 VVP ?= vvp
 VERILATOR ?= verilator
+YOSYS ?= yosys
+NEXTPNR ?= nextpnr-ecp5
 # Prefer GTKWave when installed; the macOS setup also supports Surfer.
 VIEWER ?= $(if $(shell command -v gtkwave 2>/dev/null),gtkwave,surfer)
 N ?= 4
@@ -20,7 +22,7 @@ INCLUDES := $(addprefix -I,$(INCLUDE_DIRS))
 TESTBENCHES := $(sort $(wildcard tb/tb_*.v))
 MODULES := $(patsubst tb/tb_%.v,%,$(TESTBENCHES))
 
-.PHONY: help lint vectors test waves demo clean FORCE
+.PHONY: help lint vectors test waves demo synth clean FORCE
 
 help:
 	@echo 'make lint           Lint all available RTL with Verilator -Wall'
@@ -29,6 +31,7 @@ help:
 	@echo 'make test           Generate vectors and run all available testbenches'
 	@echo 'make waves          Run systolic_top and open its VCD (GTKWave or Surfer)'
 	@echo 'make demo           Multiply one product on the array and the baseline (M= K= P= SEED= A= B= WAVES=1)'
+	@echo 'make synth          Synthesize the array (N=$(SYNTH_N)) and baseline for ECP5'
 	@echo 'make clean          Remove build outputs and the generated vector link'
 
 # Lint each module as a top to avoid MULTITOP warnings while retaining -Wall.
@@ -109,11 +112,32 @@ waves: sim-$(WAVE_MODULE)
 
 # Live demonstration (#70): one product of any size on systolic_top and seq_matmul,
 # checked against NumPy, with both cycle counts. Random M x K by K x P matrices from
-# SEED, or your own with A=file B=file; WAVES=1 opens the last tile's waveform.
+# SEED, or your own with A=file B=file; WAVES=1 opens the last tile waveform.
 DEMO_ARGS = $(if $(M),--m $(M)) $(if $(K),--k $(K)) $(if $(P),--p $(P)) --seed $(SEED) \
 	$(if $(A),--a $(A)) $(if $(B),--b $(B)) $(if $(WAVES),--waves)
+
 demo:
 	@$(PYTHON) model/demo.py $(DEMO_ARGS)
+
+# Synthesize systolic_top at each N in SYNTH_N plus the sequential baseline
+# (N=4) for the Lattice ECP5 LFE5U-25F, then collect logs into the summary
+# CSV (issue #75). An N that does not fit the device is skipped with a note.
+SYNTH_N ?= 2 3 4 8
+SYNTH_OUT ?= results/phase2/synth
+
+synth:
+	@if ! command -v $(YOSYS) >/dev/null 2>&1 || ! command -v $(NEXTPNR) >/dev/null 2>&1; then \
+		echo 'ERROR: yosys and nextpnr-ecp5 not found; install the OSS CAD Suite (docs/setup.md)'; \
+		exit 1; \
+	fi
+	@for n in $(SYNTH_N); do \
+		echo "SYNTH systolic_top N=$$n"; \
+		sh synth/yosys/run_synth.sh systolic_top $$n $(SYNTH_OUT) || \
+			echo "SKIP systolic_top N=$$n: does not fit the LFE5U-25F"; \
+	done
+	@echo "SYNTH seq_matmul N=4 (sequential baseline)"
+	@sh synth/yosys/run_synth.sh seq_matmul 4 $(SYNTH_OUT)
+	@$(PYTHON) synth/yosys/summarize.py $(SYNTH_OUT)
 
 clean:
 	rm -rf build
