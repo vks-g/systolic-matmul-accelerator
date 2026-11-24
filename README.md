@@ -18,7 +18,7 @@ Modern Computer Architecture, Project 12: Systolic Array Matrix Multiplication A
     <td align="center" width="34%">
       <a href="reports/phase2/main.pdf"><img src="media/phase2/report_thumbnail.jpg" alt="Read the final IEEE report (PDF)"></a>
       <br><b><a href="reports/phase2/main.pdf">Read the final report (PDF)</a></b>
-      <br>12 pages · <a href="reports/phase2/">LaTeX source</a>
+      <br>13 pages · <a href="reports/phase2/">LaTeX source</a>
     </td>
     <td align="center" width="33%">
       <a href="https://drive.google.com/drive/folders/1d-p1YpFjd7gjbm1XGEC8u5PCso8LQxUw?usp=sharing"><img src="media/phase1/video_thumbnail.jpg" alt="Watch the Phase 1 prototype video (4:42)"></a>
@@ -46,6 +46,7 @@ Modern Computer Architecture, Project 12: Systolic Array Matrix Multiplication A
 | Measured sequential baseline | [`rtl/baseline/seq_matmul.v`](rtl/baseline/seq_matmul.v), same host ports as the array; [comparison](#measured-speed-up-against-the-sequential-baseline) |
 | Synthesis: resources and maximum frequency | [`synth/`](synth/README.md), results in [`results/phase2/synth/`](results/phase2/synth/) |
 | Live demonstration | [`make demo`](#live-demo-make-demo) |
+| Individual contributions | Section VI of the final report, the [team table](#team) below, and each member's commits and pull requests |
 | Evidence | [cycle counts, speed-ups and plots](results/phase2/), [waveform captures](results/phase2/waveforms/captions.md), [architecture diagrams](docs/architecture/README.md) |
 
 ## Phase 1 deliverables
