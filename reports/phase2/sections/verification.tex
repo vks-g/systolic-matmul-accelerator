@@ -32,26 +32,43 @@ with enable low. The PE test adds the one-enabled-cycle forwarding delay
 and checks that both forwarding registers hold and clear with the
 accumulator. Input-buffer tests compare every A and B lane at each step
 with the spec's skew table; output-buffer tests check parallel capture,
-holding the previous result and readout at every address.
+holding the previous result and readout at every address. For Phase~2 the
+input-buffer test adds buffers with $K_{\max} > N$ and checks every lane in
+every step for $k_{\mathrm{len}} = 1$, $N$, $N+1$ and $K_{\max}$, with nonzero
+data stored past $k_{\mathrm{len}}$.
 
 Controller tests check the state sequence, busy-state rejection of
 \texttt{start}, restart from \texttt{DONE}, mid-run reset and the exact
-compute and busy lengths for $N=3$ and $N=4$. Array tests drive skewed
-operands at the edges and check every PE's partial sum after each compute
-edge, as well as final results, stalls and restart. They exercise both
-array sizes, catching row/column indexing and fill/drain errors that a
-single final-result comparison could miss.
+compute and busy lengths for $N=3$ and $N=4$. For Phase~2 they also check
+that $k_{\mathrm{len}}$ and \texttt{accumulate} are sampled with
+\texttt{start}, that a start with $k_{\mathrm{len}}$ outside 1 to $K_{\max}$
+is ignored, and every cycle of an accumulate run, which skips
+\texttt{CLEAR}. Array tests drive skewed operands at the edges and check
+every PE's partial sum after each compute edge, as well as final results,
+stalls and restart. They exercise both array sizes, catching row/column
+indexing and fill/drain errors that a single final-result comparison could
+miss. The Phase~2 array cases add $k_{\mathrm{len}} = 1$, $N-1$, $N+1$ and
+$K_{\max}$, random inner lengths, and products split into chunks in which
+every chunk after the first runs without a clear, as an accumulate run
+does.
 
 The end-to-end test loads operands through the host ports and compares
 every output element with golden vectors. It also checks ignored writes
 while busy, back-to-back runs, replacing only one operand matrix,
 preservation of the previous $C$ until capture, and reset during a run.
-For each golden case it counts busy cycles and checks
-\texttt{cycle\_count}: both must equal $K+2N$, or 12 for $N=K=4$.
-The CSV in \path{results/phase1/cycle_counts.csv} records these measurements;
-its compute-cycle field is derived by subtracting the one CLEAR and one
-CAPTURE cycle. The controller tests check the compute interval directly
-against $T=K+2N-2$, which is 10 cycles at the default size.
+For each run it counts busy cycles and checks \texttt{cycle\_count}:
+both must equal $k_{\mathrm{len}}+2N$, or 12 for $N=k_{\mathrm{len}}=4$.
+For Phase~2 it also runs every case of the $K \neq N$ set, with the filler
+past $k_{\mathrm{len}}$ written too, and multiplies every product of the
+tiled set through the host ports, cut into tiles and accumulate chunks as in
+Section~III-E. For each product it checks every element of $C$, the busy
+cycles and the total cycles of the host procedure against the cycle model.
+The measurements are written to \path{results/phase1/cycle_counts.csv},
+\path{results/phase2/cycle_counts.csv} and
+\path{results/phase2/tiled_cycles.csv}; the compute-cycle field is derived
+by subtracting the one CLEAR and one CAPTURE cycle. The controller tests
+check the compute interval directly against $T=k_{\mathrm{len}}+2N-2$,
+which is 10 cycles at the default size.
 
 \subsection{Golden Results and Directed Cases}
 The Python reference in \path{model/golden_model.py} computes signed
@@ -72,6 +89,16 @@ in simulation logs, and the vector manifest maps cases to file offsets.
 Separate Python self-tests check the reference, cycle model, hexadecimal
 encoding and generator against hand-worked results and the spec.
 
+Phase~2 adds two vector sets from the same generator. Each set draws from its
+own seeded stream, so the Phase~1 files are unchanged. The $K \neq N$ set has
+112 single runs: ones, maximum negative and random operands at
+$k_{\mathrm{len}} = 1$, $N-1$, $N+1$ and $K_{\max}$, then 100 random cases
+with $k_{\mathrm{len}}$ from 1 to $K_{\max}$. Every case stores random filler
+past $k_{\mathrm{len}}$, so a design that reads too far fails. The tiled set
+has 26 whole products: six directed ones (an exact $8 \times 8 \times 8$,
+edge padding, three chunks, padding with chunks, a single element and a
+$4 \times 64 \times 4$ product of $-128$ values) and 20 random ones.
+
 \subsection{Failure Reporting and Reproduction}
 Each self-checking testbench prints the following summary on success:
 \begin{center}
@@ -85,7 +112,7 @@ if a log contains a \texttt{FAIL} summary or lacks a correctly formatted
 generated build directory. Repeated Make invocations rerun simulations even when
 compiled executables already exist. Generated vectors and VCDs remain
 uncommitted; selected logs, cycle counts and waveform captures in
-\path{results/phase1/} provide report evidence.
+\path{results/phase1/} and \path{results/phase2/} provide report evidence.
 
 \subsection{Continuous Integration and Scope}
 The GitHub Actions simulation workflow runs on every pull request and on
@@ -94,7 +121,10 @@ Icarus Verilog, Verilator and NumPy, then executes the same
 \texttt{make lint test} command used locally. Failed jobs upload available
 \path{build/*.log} files as diagnostic artifacts. The Python model
 self-tests, GUI viewer and report build are separate local checks; they
-are not steps in this workflow.
+are not steps in this workflow. A second workflow, added in Phase~2, reruns
+\texttt{make synth} with pinned open-source tools on every pull request and
+push to \texttt{dev}, and fails if the regenerated synthesis summary differs
+from the committed one.
 
 All eight RTL testbenches pass the current regression: the seven of
 Phase~1 and \texttt{tb\_seq\_matmul}, which drives the sequential baseline
