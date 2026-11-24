@@ -35,10 +35,6 @@
 % architecture diagrams.
 \graphicspath{{figures/}{../../results/phase2/figures/}{../../results/phase2/waveforms/}{../../results/phase1/waveforms/}{../../docs/architecture/png/}}
 
-% Sections that other pull requests add are input only once they exist, so the
-% report builds at every step. Assembly (#63) replaces these with plain \input.
-\newcommand{\inputifexists}[1]{\IfFileExists{#1.tex}{\input{#1}}{}}
-
 \begin{document}
 
 \title{A Parameterized Output-Stationary Systolic Array\\
@@ -55,7 +51,7 @@ Phase~1 prototype video: \url{https://drive.google.com/drive/folders/1d-p1YpFjd7
 \input{sections/abstract}
 
 \input{sections/introduction}
-\inputifexists{sections/literature_review}  % #74
+\input{sections/literature_review}          % #74
 
 % Proposed Solution
 \input{sections/architecture_overview}
@@ -68,16 +64,15 @@ Phase~1 prototype video: \url{https://drive.google.com/drive/folders/1d-p1YpFjd7
 
 % Results and Discussion
 \input{sections/results_discussion}
-\inputifexists{sections/results}            % #71
-\inputifexists{sections/baseline}           % #67
-\inputifexists{sections/synthesis}          % #78
-\inputifexists{sections/discussion}         % #63
+\input{sections/results}                    % #71
+\input{sections/baseline}                   % #67
+\input{sections/synthesis}                  % #78
+\input{sections/discussion}                 % #63
 
 \input{sections/contributions}
 \input{sections/conclusion}
 
-\IfFileExists{refs.bib}{%
-  \bibliographystyle{IEEEtran}
-  \bibliography{refs}}{}
+\bibliographystyle{IEEEtran}
+\bibliography{refs}
 
 \end{document}

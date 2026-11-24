@@ -16,30 +16,31 @@
 \label{fig:util}
 \end{figure}
 
-\textbf{Tiled products.} The same testbench multiplied all 26 products of the tiled vector set, from $1 \times 1 \times 1$ to $9 \times 33 \times 7$ and $4 \times 64 \times 4$, by cutting them into tiles and chunks through the host ports as Section~III-E describes. Every element of every product matched the golden result, including the $4 \times 64 \times 4$ product of $-128$ values, whose elements reach 1,048,576 across four accumulate runs. The capture \path{results/phase2/waveforms/systolic_top_accumulate.png} shows the second and third chunks of the $4 \times 40 \times 4$ product starting without a clear cycle and adding onto the partial sums. Table~\ref{tab:tiled} lists the six directed products. On every product the busy cycles equal~\eqref{eq:tilebusy} summed over the tiles, and the total cycles of the host procedure, with one element loaded and read per cycle, equal the count of Section~III-E: $NK$ cycles of loading, one start pulse per run and $N^2$ cycles of readout per tile, on top of the busy cycles.
+\textbf{Tiled products.} The same testbench multiplied all 26 products of the tiled vector set, from $1 \times 1 \times 1$ to $9 \times 33 \times 7$ and $4 \times 64 \times 4$, by cutting them into tiles and chunks through the host ports as Section~III-E describes. Every element of every product matched the golden result, including the $4 \times 64 \times 4$ product of $-128$ values, whose elements reach 1,048,576 across one normal and three accumulate runs. The capture \path{results/phase2/waveforms/systolic_top_accumulate.png} shows the second and third chunks of the $4 \times 40 \times 4$ product starting without a clear cycle and adding onto the partial sums. Table~\ref{tab:tiled} lists the six directed products. On every product the busy cycles equal~\eqref{eq:tilebusy} summed over the tiles, and the total cycles of the host procedure, with one element loaded and read per cycle, equal the count of Section~III-E: $NK$ cycles of loading, one start pulse per run and $N^2$ cycles of readout per tile, on top of the busy cycles.
 
-\begin{table}[t]
+\begin{table*}[t]
 \centering
-\caption{Measured cycles of the directed tiled products ($N = 4$, $K_{\max} = 16$)}
-\label{tab:tiled}
+\caption{Measured cycles of the directed tiled products on the array and the sequential baseline ($N = 4$, $K_{\max} = 16$)}
+\label{tab:tiled}\label{tab:speedup}
 \footnotesize
-\setlength{\tabcolsep}{2.6pt}
-\begin{tabular}{@{}lccrrrr@{}}
+\begin{tabular}{@{}lccrrrrrrrr@{}}
 \toprule
-Product & $M{\times}K{\times}P$ & Tiles, chunks & Busy & Total & Busy/total & Util. \\
+ & & & \multicolumn{3}{c}{Busy cycles} & \multicolumn{3}{c}{Total cycles} & \multicolumn{2}{c@{}}{Array} \\
+\cmidrule(lr){4-6}\cmidrule(lr){7-9}\cmidrule(l){10-11}
+Product & $M{\times}K{\times}P$ & Tiles, chunks & Array & Baseline & Speed-up & Array & Baseline & Speed-up & Busy/total & Util. \\
 \midrule
-exact & $8{\times}8{\times}8$ & 4, 1 & 64 & 260 & 24.6\,\% & 50.0\,\% \\
-pad\_all & $5{\times}7{\times}6$ & 4, 1 & 60 & 240 & 25.0\,\% & 21.9\,\% \\
-chunks & $4{\times}40{\times}4$ & 1, 3 & 62 & 241 & 25.7\,\% & 64.5\,\% \\
-pad\_chunks & $9{\times}33{\times}7$ & 6, 3 & 330 & 1236 & 26.7\,\% & 39.4\,\% \\
-single & $1{\times}1{\times}1$ & 1, 1 & 9 & 30 & 30.0\,\% & 0.7\,\% \\
-max\_neg.\_long & $4{\times}64{\times}4$ & 1, 4 & 93 & 369 & 25.2\,\% & 68.8\,\% \\
+exact & $8{\times}8{\times}8$ & 4, 1 & 64 & 512 & 8.0 & 260 & 708 & 2.7 & 24.6\,\% & 50.0\,\% \\
+pad\_all & $5{\times}7{\times}6$ & 4, 1 & 60 & 448 & 7.5 & 240 & 628 & 2.6 & 25.0\,\% & 21.9\,\% \\
+chunks & $4{\times}40{\times}4$ & 1, 3 & 62 & 640 & 10.3 & 241 & 819 & 3.4 & 25.7\,\% & 64.5\,\% \\
+pad\_chunks & $9{\times}33{\times}7$ & 6, 3 & 330 & 3168 & 9.6 & 1236 & 4074 & 3.3 & 26.7\,\% & 39.4\,\% \\
+single & $1{\times}1{\times}1$ & 1, 1 & 9 & 16 & 1.8 & 30 & 37 & 1.2 & 30.0\,\% & 0.7\,\% \\
+max\_negative\_long & $4{\times}64{\times}4$ & 1, 4 & 93 & 1024 & 11.0 & 369 & 1300 & 3.5 & 25.2\,\% & 68.8\,\% \\
 \bottomrule
 \end{tabular}
 
 \smallskip
 \raggedright
-Total counts loading, start pulses, busy cycles and readout. Util.\ is $MKP / (N^2 \cdot \mathrm{busy})$: useful multiply-accumulates over what the array could do while busy.
-\end{table}
+Total counts loading, start pulses, busy cycles and readout, with one element written or read per cycle. Util.\ is $MKP / (N^2 \cdot \mathrm{busy})$: useful multiply-accumulates over what the array could do while busy.
+\end{table*}
 
 Two costs stand out. First, the array is busy for only 22.9 to 30.0\,\% of the host procedure across the 26 products: loading a run's operands one element per cycle takes $N k_{\mathrm{len}}$ cycles, longer than the run's $k_{\mathrm{len}} + 2N$ busy cycles for every $k_{\mathrm{len}} \ge 3$, and each tile adds $N^2$ cycles of readout. Second, zero padding costs as much time as real work. The $5 \times 7 \times 6$ product keeps the array busy almost as long as the $8 \times 8 \times 8$ one, 60 cycles against 64, but does fewer than half as many useful multiply-accumulates, so its utilization is 21.9\,\% against 50.0\,\%. Long inner dimensions use the array best: the single-tile products with three and four chunks reach 64.5 and 68.8\,\%. Counted end to end at 56.83~MHz, the 26 products complete 1.9 to 158 million multiply-accumulates per second: 112 million for the $8 \times 8 \times 8$ product, against 455 million during its busy cycles alone.

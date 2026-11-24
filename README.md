@@ -16,9 +16,9 @@ Modern Computer Architecture, Project 12: Systolic Array Matrix Multiplication A
 <table>
   <tr>
     <td align="center" width="34%">
-      <b><a href="reports/phase2/">Final IEEE report (Phase 2)</a></b>
-      <br>Results, synthesis and the measured baseline comparison
-      <br><a href="reports/phase2/">LaTeX source and build notes</a>
+      <a href="reports/phase2/main.pdf"><img src="media/phase2/report_thumbnail.jpg" alt="Read the final IEEE report (PDF)"></a>
+      <br><b><a href="reports/phase2/main.pdf">Read the final report (PDF)</a></b>
+      <br>12 pages · <a href="reports/phase2/">LaTeX source</a>
     </td>
     <td align="center" width="33%">
       <a href="https://drive.google.com/drive/folders/1d-p1YpFjd7gjbm1XGEC8u5PCso8LQxUw?usp=sharing"><img src="media/phase1/video_thumbnail.jpg" alt="Watch the Phase 1 prototype video (4:42)"></a>
@@ -41,7 +41,7 @@ Modern Computer Architecture, Project 12: Systolic Array Matrix Multiplication A
 
 | Required | Where it is |
 |---|---|
-| Final IEEE report: results and discussion, conclusion | [`reports/phase2/`](reports/phase2/) (assembled in #63) |
+| Final IEEE report: results and discussion, conclusion | [`reports/phase2/main.pdf`](reports/phase2/main.pdf), built from [`reports/phase2/`](reports/phase2/) |
 | Inner lengths other than N, and products larger than the array | Run-time `k_len` and `accumulate` in [`rtl/control/`](rtl/control/) and [`rtl/buffers/`](rtl/buffers/); tiling procedure in [spec section 12](docs/spec.md) |
 | Measured sequential baseline | [`rtl/baseline/seq_matmul.v`](rtl/baseline/seq_matmul.v), same host ports as the array; [comparison](#measured-speed-up-against-the-sequential-baseline) |
 | Synthesis: resources and maximum frequency | [`synth/`](synth/README.md), results in [`results/phase2/synth/`](results/phase2/synth/) |
@@ -107,7 +107,7 @@ registers use `clk` and synchronous active-low `rst_n`.
 | End-to-end tests for K ≠ N and tiled products | `tb/tb_systolic_top.v` | #11, #69 | 6,078 checks pass |
 | Synthesis: resources and Fmax on ECP5 | `synth/` | #75 | N = 2, 3, 4 and the baseline; N = 8 does not fit |
 | Live demonstration | `model/demo.py` | #70 | `make demo` |
-| Final report | `reports/phase2/` | #63 | Being assembled |
+| Final report | `reports/phase2/main.pdf` | #63 | Done |
 
 ## Quick start
 
@@ -174,7 +174,7 @@ make synth SYNTH_N="2 4"   # choose the array sizes
 
 It writes the logs, timing reports, `synth_summary.csv` and `critical_paths.md`
 to [`results/phase2/synth/`](results/phase2/synth/). Placement uses a fixed seed,
-so the numbers are reproducible; the [Synthesis CI](.github/workflows/synth.yml)
+so the numbers repeat on the same platform build; the [Synthesis CI](.github/workflows/synth.yml)
 reruns the sweep and fails if the committed summary changes. See
 [`synth/README.md`](synth/README.md) for the flow.
 
@@ -325,8 +325,9 @@ and the [video notes and script](media/phase1/README.md).
 ├── results/phase1/      Phase 1 waveform captures, simulation logs, cycle counts
 ├── results/phase2/      cycle counts, speed-ups, plots, waveforms, synthesis results
 ├── reports/phase1/      Phase 1 IEEE report: main.tex, sections/, refs.bib, main.pdf
-├── reports/phase2/      final IEEE report
-└── media/phase1/        video script; the video itself is linked, not committed
+├── reports/phase2/      final IEEE report: main.tex, sections/, refs.bib, main.pdf
+├── media/phase1/        video script; the video itself is linked, not committed
+└── media/phase2/        README thumbnail of the final report
 ```
 
 ## Team

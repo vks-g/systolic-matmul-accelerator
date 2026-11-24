@@ -1,5 +1,4 @@
 % Introduction (issue #5; final report #63).
-% At assembly, check that every Phase 2 item listed below landed (#64, #69, #70, #73, #75).
 
 \section{Introduction}
 Matrix multiplication is the core operation of fully connected and convolutional neural-network layers, of transformers, and of many filters and transforms in signal processing. Multiplying two $N \times N$ matrices takes $N^3$ multiply-accumulate (MAC) operations, and each operand is used $N$ times. A general-purpose processor fetches those operands again and again through its memory hierarchy, and the energy of that data movement exceeds the energy of the arithmetic by orders of magnitude~\cite{horowitz2014energy, sze2017efficient}. Dedicated hardware that keeps operands close to many parallel MAC units is therefore the standard way to accelerate this workload.
@@ -11,7 +10,7 @@ This project designs, verifies and evaluates a systolic-array matrix-multiplicat
 This report presents the final design and its evaluation. Phase~2 adds:
 \begin{itemize}
 \item a run-time inner length $k_{\mathrm{len}}$, from 1 to $K_{\max}$, and an \emph{accumulate} start that adds a run's products onto the previous result, so that the unchanged array multiplies matrices of any size, one $N \times N$ output tile and one chunk of the inner dimension at a time;
-\item a sequential baseline in RTL, with one multiply-accumulate unit and exactly the same host interface, so that the same testbenches measure the speed-up on the same products;
+\item a sequential baseline in RTL that has one multiply-accumulate unit and exactly the same host interface, so that the same testbenches measure the speed-up on the same products;
 \item synthesis of both designs for a Lattice ECP5 FPGA with the open-source Yosys and nextpnr tools~\cite{wolf2013yosys, shah2019yosysnextpnr}, which gives their resource use and maximum clock frequency;
 \item a cycle-level performance model, tests of inner lengths other than $N$ and of tiled products larger than the array, and a live demonstration, \texttt{make demo}, that runs any product on both designs and checks the result against NumPy.
 \end{itemize}

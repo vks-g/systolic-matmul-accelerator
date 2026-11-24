@@ -4,7 +4,7 @@
 
 - `main.tex` sets up the IEEEtran template and inputs one file per section from `sections/`, in the order the Phase 2 brief asks for: Abstract, Introduction, Literature Review, Proposed Solution, Verification, Results and Discussion, Individual Contributions, Conclusion and References.
 - Each section file has one owner, assigned through its GitHub issue. The issue number is in the first line of each file. The sections were copied from Phase 1 to start from; each owner updates their own.
-- Sections that are still missing are skipped, so the report builds at every step. Assembly (#63) makes them required.
+- Every section is required: `main.tex` inputs each file directly, so a missing section stops the build.
 - `refs.bib` holds every reference cited in the sections. Add an entry in the same PR as the section that cites it (#74).
 - Figures are read from `figures/`, `../../results/phase2/figures/`, `../../results/phase2/waveforms/`, `../../results/phase1/waveforms/` and `../../docs/architecture/png/`. Build inside a full checkout of the repository.
 
