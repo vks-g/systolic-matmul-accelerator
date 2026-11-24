@@ -11,24 +11,20 @@ flowchart TB
   accDescr: The output C is four 4 by 4 tiles. Each output tile uses the matching four A rows and four B columns. For each tile, run once with k 0 through 15 and accumulate low, then run with k 16 through 19, k_len 4, and accumulate high. The first run clears the partial sum; the second adds to it.
 
   product["A: 8 × 20  ·  B: 20 × 8<br/>N = 4  ·  K_MAX = 16"]
-  split["K chunks: 0–15 (k_len 16)  →  16–19 (k_len 4)<br/>A splits by row blocks; B splits by column blocks"]
+  split["K chunks: k 0–15 (k_len 16), then k 16–19 (k_len 4)<br/>A splits by row blocks, B by column blocks"]
   product --> split
 
-  subgraph outputs["C: 8 × 8, four 4 × 4 output tiles"]
+  subgraph outputs["C: 8 × 8 = four 4 × 4 output tiles"]
     direction TB
-    subgraph row0["C rows 0–3"]
-      direction LR
-      c00["Tile (0,0)<br/>A rows 0–3 · B cols 0–3"]
-      c01["Tile (0,1)<br/>A rows 0–3 · B cols 4–7"]
-    end
-    subgraph row1["C rows 4–7"]
-      direction LR
-      c10["Tile (1,0)<br/>A rows 4–7 · B cols 0–3"]
-      c11["Tile (1,1)<br/>A rows 4–7 · B cols 4–7"]
-    end
+    c00["Tile (0,0)<br/>A rows 0–3 · B cols 0–3"]
+    c01["Tile (0,1)<br/>A rows 0–3 · B cols 4–7"]
+    c10["Tile (1,0)<br/>A rows 4–7 · B cols 0–3"]
+    c11["Tile (1,1)<br/>A rows 4–7 · B cols 4–7"]
+    c00 ~~~ c10
+    c01 ~~~ c11
   end
   split --> outputs
-  note["For each tile: run k 0–15 normally, then k 16–19 with accumulate high.<br/>The first run initializes C; the second keeps the partial sum.<br/>Load its A row block and B column block; read C when complete.<br/>Pad rows or columns beyond M or P with zero."]
+  note["Per tile: run 1, k 0–15, accumulate low (clears C)<br/>run 2, k 16–19, accumulate high (adds to C)<br/>Then read the 4 × 4 tile. Zero-pad edges past M or P."]
   outputs -.-> note
 
   classDef tile fill:#dce9f7,stroke:#2c5d8f,color:#13263d

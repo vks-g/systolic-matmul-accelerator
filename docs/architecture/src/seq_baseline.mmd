@@ -1,44 +1,31 @@
 ---
 config:
   flowchart:
-    nodeSpacing: 24
-    rankSpacing: 22
-    padding: 10
-    wrappingWidth: 320
+    nodeSpacing: 18
+    rankSpacing: 26
+    padding: 8
+    wrappingWidth: 240
 ---
 flowchart LR
   accTitle: Sequential baseline block diagram — one MAC, same host interface as the accelerator
   accDescr: seq_matmul keeps the same ports, address map and host protocol as systolic_top. Operand storage holds A and B. Row, column and k counters address the storage. A single multiplier and adder form one MAC; the running sum restarts at zero, or at the stored C element on an accumulate run. Each finished element is written to the C store in the cycle of its last product. The sequencer is busy for N squared times k_len cycles.
 
-  subgraph top["seq_matmul"]
-    direction LR
-    subgraph control["Host interface and sequencer"]
-      direction TB
-      host["Host ports (identical to systolic_top)<br/>a_we/a_addr/a_wdata, b_we/b_addr/b_wdata<br/>start, k_len, accumulate → busy, done, cycle_count<br/>c_addr → c_rdata"]
-      seq["Sequencer: IDLE → COMPUTE → DONE<br/>busy = N²·k_len cycles<br/>no clear or capture cycle<br/>k_len, accumulate sampled with start"]
-      host --> seq
-    end
-    subgraph dp["Datapath — one MAC"]
-      direction TB
-      subgraph operands["Operands and address counters"]
-        direction LR
-        store["Operand storage<br/>A: N × K_MAX  ·  B: K_MAX × N"]
-        ctr["Row, column and k counters<br/>row, col: 0…N−1  ·  k: 0…k_len−1"]
-      end
-      subgraph mac["Multiply and accumulate"]
-        direction LR
-        mul["×<br/>signed DATA_W × DATA_W"]
-        add["+<br/>sign-extend to ACC_W"]
-        sum["Sum register<br/>starts at 0, or C[row][col]<br/>on accumulate"]
-        mul --> add --> sum
-        sum --> add
-      end
-      cstore["C store: N × N<br/>write C[row][col] on its last product"]
-      store --> mul
-      ctr --> store
-      sum -->|"k = k_len−1"| cstore
-    end
-    seq -.-> dp
+  subgraph ctl["Control and operands"]
+    direction TB
+    host["Host ports, same as systolic_top<br/>A/B write, start, k_len,<br/>accumulate, busy, done,<br/>cycle_count, C read"]
+    seq["Sequencer<br/>IDLE → COMPUTE → DONE<br/>busy N²·k_len cycles"]
+    ctr["Counters<br/>row, col: 0…N−1<br/>k: 0…k_len−1"]
+    store["Operand storage<br/>A: N × K_MAX<br/>B: K_MAX × N"]
+    host --> seq --> ctr --> store
   end
+  subgraph mac["One MAC"]
+    direction TB
+    mul["× signed<br/>DATA_W × DATA_W"]
+    add["+ sign-extend<br/>to ACC_W"]
+    sum["Sum register<br/>starts at 0, or at<br/>C[row][col] on accumulate"]
+    cstore["C store: N × N<br/>written at k = k_len−1"]
+    mul --> add --> sum --> cstore
+  end
+  ctl --> mac
   classDef control fill:#fff3d6,stroke:#8b6016,color:#13263d
   class seq control
